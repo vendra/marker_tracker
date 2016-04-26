@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: marker_tracker
+Description: Description of marker_tracker
+Version: 0.0.1
+Cflags: -I/usr/local/include
+Libs: -L/usr/local/lib -lmarker_tracker
+Requires: cmake_modules roscpp image_transport cv_bridge camera_info_manager

@@ -1,0 +1,7 @@
+set(_CATKIN_CURRENT_PACKAGE "marker_tracker")
+set(marker_tracker_MAINTAINER "Federico Vendramin <vendra22@gmail.com>")
+set(marker_tracker_DEPRECATED "")
+set(marker_tracker_VERSION "0.0.1")
+set(marker_tracker_BUILD_DEPENDS "image_transport" "cv_bridge" "rosbag" "cmake_modules" "roscpp" "std_msgs" "opencv2" "camera_info_manager")
+set(marker_tracker_RUN_DEPENDS "image_transport" "cv_bridge" "rosbag" "cmake_modules" "roscpp" "std_msgs" "opencv2" "camera_info_manager")
+set(marker_tracker_BUILDTOOL_DEPENDS "catkin")
