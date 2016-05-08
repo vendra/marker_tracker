@@ -1,8 +1,0 @@
-prefix=/home/federico/catkin_ws/src/marker_tracker/qt_files/devel
-
-Name: marker_tracker
-Description: Description of marker_tracker
-Version: 0.0.1
-Cflags: -I/home/federico/catkin_ws/src/marker_tracker/include
-Libs: -L/home/federico/catkin_ws/src/marker_tracker/qt_files/devel/lib -lmarker_tracker
-Requires: cmake_modules roscpp image_transport cv_bridge camera_info_manager
