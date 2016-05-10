@@ -12,8 +12,7 @@ MarkerTracker::MarkerTracker()
     : it_(nh_)
 {
     // Subscribe to input video feed and publish output video feed
-    image_sub_left_  = it_.subscribe("/kinect2_head/ir_rect/image", 1,&MarkerTracker::imageCbLeft, this);
-    image_sub_right_ = it_.subscribe("/kinect2_head/ir_rect/image", 1,&MarkerTracker::imageCbRight, this);
+    image_sub_  = it_.subscribe("/kinect2_head/ir_rect/image", 1,&MarkerTracker::imageCb, this);
 
     image_pub_ = it_.advertise("/image_converter/output_video", 1);
 
@@ -30,7 +29,7 @@ MarkerTracker::~MarkerTracker()
     cv::destroyAllWindows();
 }
 
-void MarkerTracker::imageCbLeft(const sensor_msgs::ImageConstPtr& msg)
+void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
     cv_bridge::CvImagePtr cv_ptr;
     try
@@ -46,20 +45,6 @@ void MarkerTracker::imageCbLeft(const sensor_msgs::ImageConstPtr& msg)
 
 }
 
-void MarkerTracker::imageCbRight(const sensor_msgs::ImageConstPtr& msg)
-{
-    cv_bridge::CvImagePtr cv_ptr;
-    try
-    {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
-
-}
 
 
 void MarkerTracker::compute()

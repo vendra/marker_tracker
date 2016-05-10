@@ -19,8 +19,7 @@ class MarkerTracker
 {
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
-    image_transport::Subscriber image_sub_left_;
-    image_transport::Subscriber image_sub_right_;
+    image_transport::Subscriber image_sub_;
     image_transport::Publisher image_pub_;
 
 
@@ -29,9 +28,8 @@ public:
 
     ~MarkerTracker();
 
-    void imageCbLeft(const sensor_msgs::ImageConstPtr& msg);
+    void imageCb(const sensor_msgs::ImageConstPtr& msg);
 
-    void imageCbRight(const sensor_msgs::ImageConstPtr& msg);
 
     void compute();
 
