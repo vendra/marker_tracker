@@ -41,6 +41,7 @@ void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
+    frame_ = cv_ptr->image;
 
 
 }
@@ -49,13 +50,13 @@ void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 void MarkerTracker::compute()
 {
-    /* static const std::string IR_WINDOW = "IR Window";
+    static const std::string IR_WINDOW = "IR Window";
     static const std::string DEPTH_WINDOW = "Depth Window";
     static const std::string OUTPUT_WINDOW = "Output Window";
     int threshold = 80;
 
     cv::Mat img_black;
-    cv::Mat img_source = cv_ptr->image;
+    cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8U, 1.0/256);
 
     cv::SimpleBlobDetector::Params params;
@@ -79,8 +80,9 @@ void MarkerTracker::compute()
     detector.detect(img_source, keypoints);
     cv::Mat im_with_keypoints;
 
-    //cv::threshold(img_source, img_black, 255, 255, cv::THRESH_BINARY);
+    cv::threshold(img_source, img_black, 255, 255, cv::THRESH_BINARY);
 
+    /*
     cv::drawKeypoints( img_source, keypoints, im_with_keypoints, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     std::vector<cv::Point2f> punti;
     cv::KeyPoint::convert(punti, keypoints);
@@ -100,12 +102,15 @@ void MarkerTracker::compute()
         std::cout << "disegnato keypoint!" << std::endl;
         cv::circle(im_with_keypoints, punti[i], 3, cv::Scalar(255,255,255),5);
     }
-    cv::imshow(IR_WINDOW, cv_ptr->image);
+
+    */
+
+    cv::imshow(IR_WINDOW, frame_);
     cv::imshow(OUTPUT_WINDOW, im_with_keypoints);
     cv::waitKey(10);
 
     // Output modified video stream
-    image_pub_.publish(cv_ptr->toImageMsg());
-    */
+    //image_pub_.publish(cv_ptr->toImageMsg());
+
 
 }

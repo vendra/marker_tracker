@@ -44,11 +44,15 @@ int main (int argc , char ** argv)
     cv::namedWindow("IR", cv::WINDOW_AUTOSIZE);
 
     MarkerTracker mt;
+    ros::spinOnce();
 
     //cv::createTrackbar("Threshold", OUTPUT_WINDOW, &threshold, 100);
 
-
-    //node.spin(); // Let the node run until it finishes
-    ros::spin();
+    while(node_handle.ok())
+    {
+        mt.compute();
+        //Let the node run until it finishes
+        ros::spinOnce();
+    }
     return 0;
 }

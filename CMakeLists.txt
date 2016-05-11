@@ -40,6 +40,7 @@ include_directories(
 add_library(${PROJECT_NAME} src/marker_tracker_node.cpp)
 
 add_library(MarkerTracker include/MarkerTracker.hpp src/MarkerTracker.cpp)
+target_link_libraries(MarkerTracker ${OpenCV_LIBRARIES})
 
 
 add_executable(marker_tracker_node src/marker_tracker_node.cpp)
