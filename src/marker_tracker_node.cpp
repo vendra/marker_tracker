@@ -33,7 +33,9 @@
 int main (int argc , char ** argv)
 {
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
-    auto node_handle = ros::NodeHandle("~"); // This node handle make the topics and parameters be
+    //auto node_handle = ros::NodeHandle("~"); // This node handle make the topics and parameters be
+    ros::NodeHandle node_handle;
+
     // relative to the node, i.e. /class_template/<something>
 
     /*
@@ -44,6 +46,10 @@ int main (int argc , char ** argv)
     cv::namedWindow("IR", cv::WINDOW_AUTOSIZE);
 
     MarkerTracker mt;
+    ros::Subscriber image_sub = node_handle.subscribe("/kinect2_head/ir_rect/image", 5,&MarkerTracker::imageCb, &mt);
+
+    ros::spinOnce();
+    ros::Duration(2.0).sleep();
     ros::spinOnce();
 
     //cv::createTrackbar("Threshold", OUTPUT_WINDOW, &threshold, 100);

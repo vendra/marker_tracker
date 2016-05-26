@@ -12,7 +12,7 @@ MarkerTracker::MarkerTracker()
     : it_(nh_)
 {
     // Subscribe to input video feed and publish output video feed
-    image_sub_  = it_.subscribe("/kinect2_head/ir_rect/image", 1,&MarkerTracker::imageCb, this);
+
 
     image_pub_ = it_.advertise("/image_converter/output_video", 1);
 
@@ -55,57 +55,67 @@ void MarkerTracker::compute()
     static const std::string OUTPUT_WINDOW = "Output Window";
     int threshold = 80;
 
+
     cv::Mat img_black;
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8U, 1.0/256);
 
+    cv::Mat img_prova;
+    img_prova = cv::imread("/home/federico/blob_detection.jpg");
     cv::SimpleBlobDetector::Params params;
-    params.minDistBetweenBlobs = 10.0f;
-    params.minThreshold = 20;
-    //params.maxThreshold = 255;
+    params.minDistBetweenBlobs = 20.0f;
+    params.minThreshold = 30;
+    params.maxThreshold = 255;
 
     params.filterByInertia = false;
     params.filterByConvexity = false;
     params.filterByColor = false;
-    //params.blobColor = 255;
+    params.blobColor = 255;
     params.filterByCircularity = false;
 
     params.filterByArea = true;
-    params.minArea = 3.0;
+    params.minArea = 1.0;
     params.maxArea = 100.0;
 
     cv::SimpleBlobDetector detector(params);
 
     std::vector<cv::KeyPoint> keypoints;
+
+    //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
+
     detector.detect(img_source, keypoints);
     cv::Mat im_with_keypoints;
 
     cv::threshold(img_source, img_black, 255, 255, cv::THRESH_BINARY);
 
-    /*
-    cv::drawKeypoints( img_source, keypoints, im_with_keypoints, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+    cv::drawKeypoints( img_black, keypoints, im_with_keypoints, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     std::vector<cv::Point2f> punti;
-    cv::KeyPoint::convert(punti, keypoints);
+    //cv::KeyPoint::convert(punti, keypoints);
     //std::cout << "Mat 8U: " << img_source << std::endl;
+
+    /*
     for (int i = 0; i < img_source.rows; ++i)
         for (int j = 0; j < img_source.cols; ++j)
         {
             if (img_source.at<uchar>(i,j) > 250)
                 std::cout << "Trovato pixel alto: " << std::endl;
         }
-
-    std::cout << "Numero di keypoints: " << keypoints.size() << std::endl;
+*/
+    //std::cout << "Numero di keypoints: " << keypoints.size() << std::endl;
 
 
     for(int i = 0; i < keypoints.size(); ++i)
     {
-        std::cout << "disegnato keypoint!" << std::endl;
-        cv::circle(im_with_keypoints, punti[i], 3, cv::Scalar(255,255,255),5);
+        //std::cout << "disegnato keypoint!" << std::endl;
+        cv::Point2f p = keypoints[i].pt;
+        cv::circle(im_with_keypoints, p, 3, cv::Scalar(0,255,0), 1);
     }
 
-    */
 
-    cv::imshow(IR_WINDOW, frame_);
+
+    //std::cout << "OK!" << std::endl;
+    cv::imshow(IR_WINDOW, img_source);
     cv::imshow(OUTPUT_WINDOW, im_with_keypoints);
     cv::waitKey(10);
 
