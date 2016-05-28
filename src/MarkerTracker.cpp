@@ -43,9 +43,23 @@ void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
     }
     frame_ = cv_ptr->image;
 
-
 }
 
+void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr& msg)
+{
+    cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+    depth_frame_ = cv_ptr->image;
+
+}
 
 
 void MarkerTracker::compute()
@@ -64,7 +78,7 @@ void MarkerTracker::compute()
     img_prova = cv::imread("/home/federico/blob_detection.jpg");
     cv::SimpleBlobDetector::Params params;
     params.minDistBetweenBlobs = 20.0f;
-    params.minThreshold = 30;
+    params.minThreshold = 200;
     params.maxThreshold = 255;
 
     params.filterByInertia = false;
@@ -74,7 +88,7 @@ void MarkerTracker::compute()
     params.filterByCircularity = false;
 
     params.filterByArea = true;
-    params.minArea = 1.0;
+    params.minArea = 5.0;
     params.maxArea = 100.0;
 
     cv::SimpleBlobDetector detector(params);
@@ -117,6 +131,10 @@ void MarkerTracker::compute()
     //std::cout << "OK!" << std::endl;
     cv::imshow(IR_WINDOW, img_source);
     cv::imshow(OUTPUT_WINDOW, im_with_keypoints);
+
+    //depth_frame_.convertTo(depth_frame_, CV_8U, 1.0/256);
+    //cv::equalizeHist(depth_frame_, depth_frame_);
+    cv::imshow(DEPTH_WINDOW, depth_frame_);
     cv::waitKey(10);
 
     // Output modified video stream

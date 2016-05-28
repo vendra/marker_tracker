@@ -22,7 +22,7 @@ class MarkerTracker
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     image_transport::Publisher image_pub_;
-    cv::Mat frame_;
+    cv::Mat frame_, depth_frame_;
 
 
 public:
@@ -32,6 +32,7 @@ public:
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 
+    void depthCb(const sensor_msgs::ImageConstPtr& msg);
 
     void compute();
 

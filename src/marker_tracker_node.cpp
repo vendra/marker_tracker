@@ -46,8 +46,8 @@ int main (int argc , char ** argv)
     cv::namedWindow("IR", cv::WINDOW_AUTOSIZE);
 
     MarkerTracker mt;
-    ros::Subscriber image_sub = node_handle.subscribe("/kinect2_head/ir_rect/image", 5,&MarkerTracker::imageCb, &mt);
-
+    ros::Subscriber image_sub = node_handle.subscribe("/kinect2_head/ir/image", 5,&MarkerTracker::imageCb, &mt);
+    ros::Subscriber depth_sub = node_handle.subscribe("/kinect2_head/depth/image", 5, &MarkerTracker::depthCb, &mt);
     ros::spinOnce();
     ros::Duration(2.0).sleep();
     ros::spinOnce();
