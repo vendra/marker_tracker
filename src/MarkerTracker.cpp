@@ -8,6 +8,10 @@
 
 #include <MarkerTracker.hpp>
 
+const std::string MarkerTracker::IR_WINDOW = "IR Window";
+const std::string MarkerTracker::DEPTH_WINDOW = "Depth Window";
+const std::string MarkerTracker::OUTPUT_WINDOW = "Output Window";
+
 MarkerTracker::MarkerTracker()
     : it_(nh_)
 {
@@ -16,9 +20,8 @@ MarkerTracker::MarkerTracker()
 
     image_pub_ = it_.advertise("/image_converter/output_video", 1);
 
-    static const std::string IR_WINDOW = "IR Window";
-    static const std::string DEPTH_WINDOW = "Depth Window";
-    static const std::string OUTPUT_WINDOW = "Output Window";
+
+
     cv::namedWindow(IR_WINDOW);
     cv::namedWindow(DEPTH_WINDOW);
     cv::namedWindow(OUTPUT_WINDOW);
@@ -62,11 +65,9 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr& msg)
 }
 
 
-void MarkerTracker::compute()
+cv::Point2f MarkerTracker::findMarker()
 {
-    static const std::string IR_WINDOW = "IR Window";
-    static const std::string DEPTH_WINDOW = "Depth Window";
-    static const std::string OUTPUT_WINDOW = "Output Window";
+
     int threshold = 80;
 
 
@@ -98,12 +99,12 @@ void MarkerTracker::compute()
     //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
     detector.detect(img_source, keypoints);
-    cv::Mat im_with_keypoints;
+
 
     cv::threshold(img_source, img_black, 255, 255, cv::THRESH_BINARY);
 
 
-    cv::drawKeypoints( img_black, keypoints, im_with_keypoints, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    cv::drawKeypoints( img_black, keypoints, im_with_keypoints_, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     std::vector<cv::Point2f> punti;
     //cv::KeyPoint::convert(punti, keypoints);
     //std::cout << "Mat 8U: " << img_source << std::endl;
@@ -118,27 +119,47 @@ void MarkerTracker::compute()
 */
     //std::cout << "Numero di keypoints: " << keypoints.size() << std::endl;
 
-
+    cv::Point2f p;
     for(int i = 0; i < keypoints.size(); ++i)
     {
         //std::cout << "disegnato keypoint!" << std::endl;
-        cv::Point2f p = keypoints[i].pt;
-        cv::circle(im_with_keypoints, p, 3, cv::Scalar(0,255,0), 1);
+        p = keypoints[i].pt;
+        cv::circle(im_with_keypoints_, p, 3, cv::Scalar(0,255,0), 1);
     }
 
+    // Ritorna l ultimo keypoint, solitamente però è uno.
+    // Aggiungere dei controlli qui
+    // Sto ritornando effettivamente il centro del blob? (NO)
+    return p;
+
+}
+
+// Exploit pinhole camera model to compute X and Y, find Z in depth map
+cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
+{
+    // Sottoscrivo topic intrinsic parameters
+    // Trovo i parametri che mi servono
+    // calcolo X e Y
+
+    // Sottoscrivo topic depth map OK ho depth_frame_
+
+    // in (u,v) trovo valore di Z corrispondente
+    unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y);
+    float Z = static_cast<float>(uZ);
+
+    if (Z != 0)
+        std::cout << "Z: " << Z << std::endl;
+
+    // ritorno point3f (XYZ)
+    return cv::Point3f(0.0,0.0,0.0);
+
+}
 
 
-    //std::cout << "OK!" << std::endl;
-    cv::imshow(IR_WINDOW, img_source);
-    cv::imshow(OUTPUT_WINDOW, im_with_keypoints);
-
-    //depth_frame_.convertTo(depth_frame_, CV_8U, 1.0/256);
-    //cv::equalizeHist(depth_frame_, depth_frame_);
+void MarkerTracker::visualize()
+{
+    cv::imshow(IR_WINDOW, frame_);
+    cv::imshow(OUTPUT_WINDOW, im_with_keypoints_);
     cv::imshow(DEPTH_WINDOW, depth_frame_);
     cv::waitKey(10);
-
-    // Output modified video stream
-    //image_pub_.publish(cv_ptr->toImageMsg());
-
-
 }

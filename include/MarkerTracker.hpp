@@ -18,12 +18,17 @@
 
 class MarkerTracker
 {
+private:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     image_transport::Publisher image_pub_;
     cv::Mat frame_, depth_frame_;
+    cv::Mat im_with_keypoints_;
 
+    static const std::string IR_WINDOW;
+    static const std::string DEPTH_WINDOW;
+    static const std::string OUTPUT_WINDOW;
 
 public:
     MarkerTracker();
@@ -34,7 +39,12 @@ public:
 
     void depthCb(const sensor_msgs::ImageConstPtr& msg);
 
-    void compute();
+    // Segment the IR image and find (u,v) coordinates of the marker
+    cv::Point2f findMarker();
+
+    cv::Point3f findCoord3D(cv::Point2f point);
+
+    void visualize();
 
 };
 

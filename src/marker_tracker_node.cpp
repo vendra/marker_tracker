@@ -56,7 +56,10 @@ int main (int argc , char ** argv)
 
     while(node_handle.ok())
     {
-        mt.compute();
+        cv::Point2f a = mt.findMarker();
+        cv::Point3f b = mt.findCoord3D(a);
+        mt.visualize();
+
         //Let the node run until it finishes
         ros::spinOnce();
     }
