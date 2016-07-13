@@ -25,6 +25,10 @@ private:
     image_transport::Publisher image_pub_;
     cv::Mat frame_, depth_frame_;
     cv::Mat im_with_keypoints_;
+    cv::Mat D,K,R,P;
+    float f_x, f_y, c_x, c_y;
+    float X,Y,Z;
+    bool flag;
 
     static const std::string IR_WINDOW;
     static const std::string DEPTH_WINDOW;
@@ -38,6 +42,8 @@ public:
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 
     void depthCb(const sensor_msgs::ImageConstPtr& msg);
+
+    void cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg);
 
     // Segment the IR image and find (u,v) coordinates of the marker
     cv::Point2f findMarker();

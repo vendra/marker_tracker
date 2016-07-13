@@ -17,13 +17,21 @@ MarkerTracker::MarkerTracker()
 {
     // Subscribe to input video feed and publish output video feed
 
-
+    flag = false;
     image_pub_ = it_.advertise("/image_converter/output_video", 1);
 
+    // Initializes values
+    f_x = 0.0;
+    f_y = 0.0;
+    c_x = 0.0;
+    c_y = 0.0;
+    X = 0.0;
+    Y = 0.0;
+    Z = 0.0;
 
 
     cv::namedWindow(IR_WINDOW);
-    cv::namedWindow(DEPTH_WINDOW);
+    //cv::namedWindow(DEPTH_WINDOW);
     cv::namedWindow(OUTPUT_WINDOW);
 }
 
@@ -61,6 +69,27 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
     depth_frame_ = cv_ptr->image;
+
+}
+
+void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
+{
+    if (!flag)
+    {
+        f_x = msg->K[0];
+        f_y = msg->K[4];
+        c_x = msg->K[2];
+        c_y = msg->K[5];
+
+        std::cout << "Camera calibration parameters OK!" << std::endl;
+        std::cout << "f_x: " << f_x << std::endl;
+        std::cout << "f_y: " << f_y << std::endl;
+        std::cout << "c_x: " << c_x << std::endl;
+        std::cout << "c_y: " << c_y << std::endl;
+        flag = true;
+
+
+    }
 
 }
 
@@ -129,7 +158,7 @@ cv::Point2f MarkerTracker::findMarker()
 
     // Ritorna l ultimo keypoint, solitamente però è uno.
     // Aggiungere dei controlli qui
-    // Sto ritornando effettivamente il centro del blob? (NO)
+    // Sto ritornando effettivamente il centro del blob? (SI)
     return p;
 
 }
@@ -137,21 +166,23 @@ cv::Point2f MarkerTracker::findMarker()
 // Exploit pinhole camera model to compute X and Y, find Z in depth map
 cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 {
-    // Sottoscrivo topic intrinsic parameters
-    // Trovo i parametri che mi servono
-    // calcolo X e Y
 
-    // Sottoscrivo topic depth map OK ho depth_frame_
 
     // in (u,v) trovo valore di Z corrispondente
     unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y);
-    float Z = static_cast<float>(uZ);
+    Z = static_cast<float>(uZ)/1000;
 
-    if (Z != 0)
-        std::cout << "Z: " << Z << std::endl;
+    //if (Z != 0)
+       // std::cout << "Z: " << Z << std::endl;
+
+
+    // calcolo X e Y
+    X = (point.x - c_x) * Z / f_x;
+    Y = (point.y - c_y) * Z / f_y;
+
 
     // ritorno point3f (XYZ)
-    return cv::Point3f(0.0,0.0,0.0);
+    return cv::Point3f(X,Y,Z);
 
 }
 
@@ -160,6 +191,6 @@ void MarkerTracker::visualize()
 {
     cv::imshow(IR_WINDOW, frame_);
     cv::imshow(OUTPUT_WINDOW, im_with_keypoints_);
-    cv::imshow(DEPTH_WINDOW, depth_frame_);
+    //cv::imshow(DEPTH_WINDOW, depth_frame_);
     cv::waitKey(10);
 }

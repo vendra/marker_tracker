@@ -48,6 +48,7 @@ int main (int argc , char ** argv)
     MarkerTracker mt;
     ros::Subscriber image_sub = node_handle.subscribe("/kinect2_head/ir/image", 5,&MarkerTracker::imageCb, &mt);
     ros::Subscriber depth_sub = node_handle.subscribe("/kinect2_head/depth/image", 5, &MarkerTracker::depthCb, &mt);
+    ros::Subscriber info_sub = node_handle.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, &mt);
     ros::spinOnce();
     ros::Duration(2.0).sleep();
     ros::spinOnce();
@@ -57,9 +58,10 @@ int main (int argc , char ** argv)
     while(node_handle.ok())
     {
         cv::Point2f a = mt.findMarker();
+        std::cout << "Coordinate centro marker X: " << a.x << " Y: "<< a.y << std::endl;
         cv::Point3f b = mt.findCoord3D(a);
         mt.visualize();
-
+        std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;
         //Let the node run until it finishes
         ros::spinOnce();
     }
