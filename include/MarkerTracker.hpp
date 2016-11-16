@@ -15,7 +15,6 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/features2d/features2d.hpp>
 #include <template.hpp>
-#include <string.h>
 
 class MarkerTracker : public Counter<MarkerTracker>
 {
