@@ -12,10 +12,13 @@ const std::string MarkerTracker::IR_WINDOW = "IR Window";
 const std::string MarkerTracker::DEPTH_WINDOW = "Depth Window";
 const std::string MarkerTracker::OUTPUT_WINDOW = "Output Window";
 
-MarkerTracker::MarkerTracker()
+MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     : it_(nh_)
 {
     // Subscribe to input video feed and publish output video feed
+    image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
+    depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
+    info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
 
     flag = false;
     image_pub_ = it_.advertise("/image_converter/output_video", 1);
@@ -104,11 +107,11 @@ cv::Point2f MarkerTracker::findMarker()
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8U, 1.0/256);
 
-    cv::Mat img_prova;
-    img_prova = cv::imread("/home/federico/blob_detection.jpg");
+    //cv::Mat img_prova = cv::imread("/home/federico/blob_detection.jpg");
+
     cv::SimpleBlobDetector::Params params;
     params.minDistBetweenBlobs = 20.0f;
-    params.minThreshold = 200;
+    params.minThreshold = 100;
     params.maxThreshold = 255;
 
     params.filterByInertia = false;
@@ -118,8 +121,8 @@ cv::Point2f MarkerTracker::findMarker()
     params.filterByCircularity = false;
 
     params.filterByArea = true;
-    params.minArea = 5.0;
-    params.maxArea = 100.0;
+    params.minArea = 1.0;
+    params.maxArea = 30.0;
 
     cv::SimpleBlobDetector detector(params);
 

@@ -22,7 +22,9 @@ private:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
+    image_transport::Subscriber depth_sub_;
     image_transport::Publisher image_pub_;
+    ros::Subscriber info_sub_;
     cv::Mat frame_, depth_frame_;
     cv::Mat im_with_keypoints_;
     cv::Mat D,K,R,P;
@@ -35,7 +37,7 @@ private:
     static const std::string OUTPUT_WINDOW;
 
 public:
-    MarkerTracker();
+    MarkerTracker(std::string image_path, std::string depth_path);
 
     ~MarkerTracker();
 

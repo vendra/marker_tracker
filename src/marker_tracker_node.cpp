@@ -33,33 +33,33 @@
 int main (int argc , char ** argv)
 {
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
-    //auto node_handle = ros::NodeHandle("~"); // This node handle make the topics and parameters be
-    ros::NodeHandle node_handle;
+    //auto nh = ros::NodeHandle("~"); // This node handle make the topics and parameters be
+    ros::NodeHandle nh;
 
     // relative to the node, i.e. /class_template/<something>
 
     /*
-    auto node = unipd::euroc::ClassTemplate(node_handle); // Create object
+    auto node = unipd::euroc::ClassTemplate(nh); // Create object
     if (not node.initialize())
       return 1;
   */
-    cv::namedWindow("IR", cv::WINDOW_AUTOSIZE);
+    //cv::namedWindow("IR", cv::WINDOW_AUTOSIZE);
 
-    MarkerTracker mt;
-    ros::Subscriber image_sub = node_handle.subscribe("/kinect2_head/ir/image", 5,&MarkerTracker::imageCb, &mt);
-    ros::Subscriber depth_sub = node_handle.subscribe("/kinect2_head/depth/image", 5, &MarkerTracker::depthCb, &mt);
-    ros::Subscriber info_sub = node_handle.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, &mt);
+    MarkerTracker mt("/kinect2_16/ir/image", "/kinect2_16/depth/image");
+
     ros::spinOnce();
     ros::Duration(2.0).sleep();
     ros::spinOnce();
 
     //cv::createTrackbar("Threshold", OUTPUT_WINDOW, &threshold, 100);
 
-    while(node_handle.ok())
+    while(nh.ok())
     {
         cv::Point2f a = mt.findMarker();
         std::cout << "Coordinate centro marker X: " << a.x << " Y: "<< a.y << std::endl;
         cv::Point3f b = mt.findCoord3D(a);
+
+        //Spostare la visualizzazione fuori dalla classe che è meglio!!
         mt.visualize();
         std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;
         //Let the node run until it finishes
