@@ -28,7 +28,8 @@ catkin_package(
 
 add_custom_target(${PROJECT_NAME}_HEADERS
 	SOURCES
- 	include/marker_tracker_node.h
+ 	include/marker_tracker_node.hpp
+	include/template.hpp
 )
 
 include_directories(

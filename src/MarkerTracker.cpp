@@ -8,20 +8,23 @@
 
 #include <MarkerTracker.hpp>
 
-const std::string MarkerTracker::IR_WINDOW = "IR Window";
-const std::string MarkerTracker::DEPTH_WINDOW = "Depth Window";
-const std::string MarkerTracker::OUTPUT_WINDOW = "Output Window";
+
+
+
+
 
 MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     : it_(nh_)
 {
+    // Counting object with static variable, such that every camera has its image displayed in correct window
+
     // Subscribe to input video feed and publish output video feed
     image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
     depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
 
     flag = false;
-    image_pub_ = it_.advertise("/image_converter/output_video", 1);
+    //image_pub_ = it_.advertise("/image_converter/output_video", 1);
 
     // Initializes values
     f_x = 0.0;
@@ -32,6 +35,11 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     Y = 0.0;
     Z = 0.0;
 
+    std::cout << Counter::howMany() << std::endl;
+    currentID_ = Counter::howMany();
+    IR_WINDOW = "IR Window" + std::to_string(currentID_);
+    DEPTH_WINDOW = "Depth Window" + std::to_string(currentID_);
+    OUTPUT_WINDOW = "Output Window" + std::to_string(currentID_);
 
     cv::namedWindow(IR_WINDOW);
     //cv::namedWindow(DEPTH_WINDOW);
@@ -105,7 +113,7 @@ cv::Point2f MarkerTracker::findMarker()
 
     cv::Mat img_black;
     cv::Mat img_source = frame_;
-    img_source.convertTo(img_source, CV_8U, 1.0/256);
+    img_source.convertTo(img_source, CV_8UC1, 1.0/256);
 
     //cv::Mat img_prova = cv::imread("/home/federico/blob_detection.jpg");
 
@@ -192,8 +200,12 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 
 void MarkerTracker::visualize()
 {
-    cv::imshow(IR_WINDOW, frame_);
+    cv::Mat out;
+    //cv::normalize(frame_, out, 128, 255, cv::NORM_MINMAX);
+    frame_.convertTo(out, CV_8UC1, 1.0/256);
+    cv::equalizeHist(out,out);
+    cv::imshow(IR_WINDOW, out);
     cv::imshow(OUTPUT_WINDOW, im_with_keypoints_);
     //cv::imshow(DEPTH_WINDOW, depth_frame_);
-    cv::waitKey(10);
+    cv::waitKey(20);
 }

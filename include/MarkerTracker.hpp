@@ -14,9 +14,10 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/features2d/features2d.hpp>
+#include <template.hpp>
+#include <string.h>
 
-
-class MarkerTracker
+class MarkerTracker : public Counter<MarkerTracker>
 {
 private:
     ros::NodeHandle nh_;
@@ -31,10 +32,13 @@ private:
     float f_x, f_y, c_x, c_y;
     float X,Y,Z;
     bool flag;
+    //static int ID_;
+    int currentID_;
 
-    static const std::string IR_WINDOW;
-    static const std::string DEPTH_WINDOW;
-    static const std::string OUTPUT_WINDOW;
+    //Queste sono da sistemare con la variabile
+    std::string IR_WINDOW;
+    std::string DEPTH_WINDOW;
+    std::string OUTPUT_WINDOW;
 
 public:
     MarkerTracker(std::string image_path, std::string depth_path);
