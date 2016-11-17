@@ -61,19 +61,19 @@ int main (int argc , char ** argv)
     while(nh.ok())
     {
         cv::Point2f a1 = mt1.findMarker();
-        std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
+        //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
         cv::Point3f b1 = mt1.findCoord3D(a1);
-        std::cout << "---------------------------------------------------------------" << std::endl;
+        //std::cout << "---------------------------------------------------------------" << std::endl;
         cv::Point2f a2 = mt2.findMarker();
-        std::cout << "Coordinate 2 centro marker X: " << a2.x << " Y: "<< a2.y << std::endl;
+        //std::cout << "Coordinate 2 centro marker X: " << a2.x << " Y: "<< a2.y << std::endl;
         cv::Point3f b2 = mt2.findCoord3D(a2);
-        std::cout << "---------------------------------------------------------------" << std::endl;
+        //std::cout << "---------------------------------------------------------------" << std::endl;
         cv::Point2f a3 = mt3.findMarker();
-        std::cout << "Coordinate 3 centro marker X: " << a3.x << " Y: "<< a3.y << std::endl;
+        //std::cout << "Coordinate 3 centro marker X: " << a3.x << " Y: "<< a3.y << std::endl;
         cv::Point3f b3 = mt3.findCoord3D(a3);
-        std::cout << "---------------------------------------------------------------" << std::endl;
+        //std::cout << "---------------------------------------------------------------" << std::endl;
         cv::Point2f a4 = mt4.findMarker();
-        std::cout << "Coordinate 4 centro marker X: " << a4.x << " Y: "<< a4.y << std::endl;
+        //std::cout << "Coordinate 4 centro marker X: " << a4.x << " Y: "<< a4.y << std::endl;
         cv::Point3f b4 = mt4.findCoord3D(a4);
 
 

@@ -129,7 +129,7 @@ cv::Point2f MarkerTracker::findMarker()
     params.filterByCircularity = false;
 
     params.filterByArea = true;
-    params.minArea = 1.0;
+    params.minArea = .5;
     params.maxArea = 30.0;
 
     cv::SimpleBlobDetector detector(params);
@@ -184,7 +184,7 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
     Z = static_cast<float>(uZ)/1000;
 
     //if (Z != 0)
-       // std::cout << "Z: " << Z << std::endl;
+    // std::cout << "Z: " << Z << std::endl;
 
 
     // calcolo X e Y
@@ -203,7 +203,16 @@ void MarkerTracker::visualize()
     cv::Mat out;
     //cv::normalize(frame_, out, 128, 255, cv::NORM_MINMAX);
     frame_.convertTo(out, CV_8UC1, 1.0/256);
-    cv::equalizeHist(out,out);
+    //cv::equalizeHist(out,out);
+    for( int y = 0; y < out.rows; y++ )
+    { for( int x = 0; x < out.cols; x++ )
+        { for( int c = 0; c < 3; c++ )
+            {
+                out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
+            }
+        }
+    }
+
     cv::imshow(IR_WINDOW, out);
     cv::imshow(OUTPUT_WINDOW, im_with_keypoints_);
     //cv::imshow(DEPTH_WINDOW, depth_frame_);
