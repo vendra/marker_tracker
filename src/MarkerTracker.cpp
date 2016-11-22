@@ -119,18 +119,18 @@ cv::Point2f MarkerTracker::findMarker()
 
     cv::SimpleBlobDetector::Params params;
     params.minDistBetweenBlobs = 20.0f;
-    params.minThreshold = 100;
-    params.maxThreshold = 255;
+    params.minThreshold = 10; // 100
+    params.maxThreshold = 255; //255
 
     params.filterByInertia = false;
     params.filterByConvexity = false;
     params.filterByColor = false;
-    params.blobColor = 255;
+    params.blobColor = 255; //255
     params.filterByCircularity = false;
 
     params.filterByArea = true;
-    params.minArea = .5;
-    params.maxArea = 30.0;
+    params.minArea = .5; //1
+    params.maxArea = 2.0; // 30
 
     cv::SimpleBlobDetector detector(params);
 
