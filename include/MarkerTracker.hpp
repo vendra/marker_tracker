@@ -25,7 +25,7 @@ private:
     image_transport::Subscriber depth_sub_;
     image_transport::Publisher image_pub_;
     ros::Subscriber info_sub_;
-    cv::Mat frame_, depth_frame_;
+    cv::Mat frame_, depth_frame_, roi_frame_;
     cv::Mat im_with_keypoints_;
     cv::Mat D,K,R,P;
     float f_x, f_y, c_x, c_y;
@@ -35,9 +35,9 @@ private:
     int currentID_;
 
     //Queste sono da sistemare con la variabile
-    std::string IR_WINDOW;
-    std::string DEPTH_WINDOW;
-    std::string OUTPUT_WINDOW;
+    //std::string IR_WINDOW;
+    //std::string DEPTH_WINDOW;
+    //std::string OUTPUT_WINDOW;
 
 public:
     MarkerTracker(std::string image_path, std::string depth_path);
@@ -50,10 +50,16 @@ public:
 
     void cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg);
 
+    void setROI(int x, int y);
+
     // Segment the IR image and find (u,v) coordinates of the marker
     cv::Point2f findMarker();
 
     cv::Point3f findCoord3D(cv::Point2f point);
+
+    bool hasIR();
+
+    void getFrame(cv::Mat& image);
 
     void visualize();
 

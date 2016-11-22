@@ -35,20 +35,22 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     Y = 0.0;
     Z = 0.0;
 
-    std::cout << Counter::howMany() << std::endl;
-    currentID_ = Counter::howMany();
-    IR_WINDOW = "IR Window" + std::to_string(currentID_);
-    DEPTH_WINDOW = "Depth Window" + std::to_string(currentID_);
-    OUTPUT_WINDOW = "Output Window" + std::to_string(currentID_);
+    //    std::cout << Counter::howMany() << std::endl;
+    //    currentID_ = Counter::howMany();
 
-    cv::namedWindow(IR_WINDOW);
-    //cv::namedWindow(DEPTH_WINDOW);
-    cv::namedWindow(OUTPUT_WINDOW);
+    //    IR_WINDOW = "IR Window" + std::to_string(currentID_);
+    //    DEPTH_WINDOW = "Depth Window" + std::to_string(currentID_);
+    //    OUTPUT_WINDOW = "Output Window" + std::to_string(currentID_);
+
+
+    //    cv::namedWindow(IR_WINDOW);
+    //    //cv::namedWindow(DEPTH_WINDOW);
+    //    cv::namedWindow(OUTPUT_WINDOW);
 }
 
 MarkerTracker::~MarkerTracker()
 {
-    cv::destroyAllWindows();
+    //cv::destroyAllWindows();
 }
 
 void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -105,6 +107,15 @@ void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
 }
 
 
+void MarkerTracker::setROI(int x, int y)
+{
+    //std::cout << "X , Y = " << x << " , " << y << std::endl;
+    for (int j = 0; j < x; j++)
+        for (int i = 0; i < y; i++)
+            frame_.at<uchar>(i,j) = 0;
+
+}
+
 cv::Point2f MarkerTracker::findMarker()
 {
 
@@ -142,9 +153,8 @@ cv::Point2f MarkerTracker::findMarker()
 
 
     cv::threshold(img_source, img_black, 255, 255, cv::THRESH_BINARY);
-
-
     cv::drawKeypoints( img_black, keypoints, im_with_keypoints_, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
     std::vector<cv::Point2f> punti;
     //cv::KeyPoint::convert(punti, keypoints);
     //std::cout << "Mat 8U: " << img_source << std::endl;
@@ -197,11 +207,22 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 
 }
 
+bool MarkerTracker::hasIR()
+{
+    return (!frame_.empty());
+}
 
-void MarkerTracker::visualize()
+void MarkerTracker::getFrame(cv::Mat &image)
+{
+    if (frame_.empty())
+        ROS_INFO("Frame vuoto");
+
+    image = frame_;
+}
+
+void MarkerTracker::visualize() //rimuovere
 {
     cv::Mat out;
-    //cv::normalize(frame_, out, 128, 255, cv::NORM_MINMAX);
     frame_.convertTo(out, CV_8UC1, 1.0/256);
     //cv::equalizeHist(out,out);
     for( int y = 0; y < out.rows; y++ )
@@ -213,8 +234,8 @@ void MarkerTracker::visualize()
         }
     }
 
-    cv::imshow(IR_WINDOW, out);
-    cv::imshow(OUTPUT_WINDOW, im_with_keypoints_);
+    //cv::imshow(IR_WINDOW, out);
+    //cv::imshow(OUTPUT_WINDOW, im_with_keypoints_);
     //cv::imshow(DEPTH_WINDOW, depth_frame_);
-    cv::waitKey(20);
+    //cv::waitKey(30);
 }
