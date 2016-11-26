@@ -9,10 +9,6 @@
 #include <MarkerTracker.hpp>
 
 
-
-
-
-
 MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     : it_(nh_)
 {
@@ -35,6 +31,8 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     Y = 0.0;
     Z = 0.0;
 
+    image_path_ = image_path;
+    depth_path_ = depth_path;
     //    std::cout << Counter::howMany() << std::endl;
     //    currentID_ = Counter::howMany();
 
@@ -46,6 +44,24 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     //    cv::namedWindow(IR_WINDOW);
     //    //cv::namedWindow(DEPTH_WINDOW);
     //    cv::namedWindow(OUTPUT_WINDOW);
+}
+
+MarkerTracker::MarkerTracker(const MarkerTracker &copia)
+    : it_(nh_)
+{
+    image_sub_ = it_.subscribe(copia.image_path_, 5, &MarkerTracker::imageCb, this);
+    depth_sub_ = it_.subscribe(copia.depth_path_, 5, &MarkerTracker::depthCb, this);
+    info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
+
+    f_x = copia.f_x;
+    f_y = copia.f_y;
+    c_x = copia.c_x;
+    c_y = copia.c_y;
+    X = copia.X;
+    Y = copia.Y;
+    Z = copia.Z;
+
+    frame_ = copia.frame_;
 }
 
 MarkerTracker::~MarkerTracker()
@@ -214,11 +230,15 @@ bool MarkerTracker::hasIR()
 
 void MarkerTracker::getFrame(cv::Mat &image)
 {
+    std::cout << "MAT: " << frame_ << std::endl;
+
     if (frame_.empty())
         ROS_INFO("Frame vuoto");
 
     image = frame_;
 }
+
+
 
 void MarkerTracker::visualize() //rimuovere
 {

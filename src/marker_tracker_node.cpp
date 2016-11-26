@@ -47,6 +47,8 @@ int main (int argc , char ** argv)
     mt.push_back(MarkerTracker("/kinect2_13/ir/image", "/kinect2_13/depth/image"));
     mt.push_back(MarkerTracker("/kinect2_16/ir/image", "/kinect2_16/depth/image"));
 
+    //mt[0] = a;
+
     std::cout << "numero oggetti " << mt.size() << std::endl;
     std::vector<std::string> IR_WINDOWS;
     std::vector<std::string> OUT_WINDOWS;
@@ -78,15 +80,18 @@ int main (int argc , char ** argv)
     cv::createTrackbar("Y", "Sliders", &y_slider, 512);
 
     std::cout << "Press q to confirm and proceed" << std::endl;
-    while( cv::waitKey(1) != 'q')
+    char c;
+    while(true)
     {
-        a.getFrame(frame);
+        mt[0].getFrame(frame);
         if (!frame.empty())
             cv::imshow("Setup", frame);
         //else
             //ROS_INFO("Image empty");
-        a.setROI(x_slider,y_slider);
-        //cv::waitKey(30);
+        mt[0].setROI(x_slider,y_slider);
+        c = cv::waitKey(30);
+        if (c == 'q')
+            break;
     }
 
     cv::destroyWindow("Setup");

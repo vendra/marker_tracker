@@ -33,6 +33,7 @@ private:
     bool flag;
     //static int ID_;
     int currentID_;
+    std::string image_path_, depth_path_;
 
     //Queste sono da sistemare con la variabile
     //std::string IR_WINDOW;
@@ -41,6 +42,8 @@ private:
 
 public:
     MarkerTracker(std::string image_path, std::string depth_path);
+
+    MarkerTracker(const MarkerTracker &copia);
 
     ~MarkerTracker();
 
