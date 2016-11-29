@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-, VENDRAMIN FEDERICO <vendra22@gmail.com>
+ *  Copyright (c) 2016-, VENDRAMIN FEDERICO <federico.vendramin@gmail.com>
  *
  *  All rights reserved.
  *
@@ -33,22 +33,18 @@
 int main (int argc , char ** argv)
 {
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
-    //auto nh = ros::NodeHandle("~"); // This node handle make the topics and parameters be
     ros::NodeHandle nh;
 
-    // Conviene sistemare e creare un array di mt. cosi da evitare di creare a mano tutto
-    //Nel setup faccio un pushback ogni volta, da sistemare
-
+    // vector of MarkerTracker, one for each kinect
     std::vector<std::shared_ptr<MarkerTracker>> mt;
+
     mt.clear();
     mt.push_back(std::make_shared<MarkerTracker>("/kinect2_10/ir/image", "/kinect2_10/depth/image"));
     mt.push_back(std::make_shared<MarkerTracker>("/kinect2_12/ir/image", "/kinect2_12/depth/image"));
     mt.push_back(std::make_shared<MarkerTracker>("/kinect2_13/ir/image", "/kinect2_13/depth/image"));
     mt.push_back(std::make_shared<MarkerTracker>("/kinect2_16/ir/image", "/kinect2_16/depth/image"));
 
-
-
-    std::cout << "numero oggetti " << mt.size() << std::endl;
+    std::cout << "Object count: " << mt.size() << std::endl;
     std::vector<std::string> IR_WINDOWS;
     std::vector<std::string> OUT_WINDOWS;
 
@@ -69,6 +65,7 @@ int main (int argc , char ** argv)
 
     cv::Mat frame, depth, out;
 
+    // wait for images to be published
     ros::spinOnce();
     ros::Duration(2.0).sleep();
     ros::spinOnce();
@@ -76,7 +73,8 @@ int main (int argc , char ** argv)
     int x_slider = 0;
     int y_slider = 0;
 
-    std::cout << "Press q to confirm and proceed" << std::endl;
+    ROS_INFO("Press q to confirm and proceed");
+
     char c;
     for (auto i = 0; i < mt.size(); ++i)
     {
@@ -99,7 +97,6 @@ int main (int argc , char ** argv)
     }
 
     cv::destroyWindow("Setup");
-    cv::destroyWindow("Sliders");
     cv::waitKey(30);
     ROS_INFO("Setup Completed");
 
@@ -109,7 +106,6 @@ int main (int argc , char ** argv)
         cv::namedWindow(IR_WINDOWS[i]);
         cv::namedWindow(OUT_WINDOWS[i]);
     }
-    std::cout << "ok";
 
     while(nh.ok())
     {
@@ -122,26 +118,13 @@ int main (int argc , char ** argv)
             //std::cout << "---------------------------------------------------------------" << std::endl;
         }
 
-//        cv::Point2f a2 = mt[1]->findMarker();
-//        //std::cout << "Coordinate 2 centro marker X: " << a2.x << " Y: "<< a2.y << std::endl;
-//        cv::Point3f b2 = mt[1]->findCoord3D(a2);
-//        //std::cout << "---------------------------------------------------------------" << std::endl;
-//        cv::Point2f a3 = mt[2]->findMarker();
-//        //std::cout << "Coordinate 3 centro marker X: " << a3.x << " Y: "<< a3.y << std::endl;
-//        cv::Point3f b3 = mt[2]->findCoord3D(a3);
-//        //std::cout << "---------------------------------------------------------------" << std::endl;
-//        cv::Point2f a4 = mt[3]->findMarker();
-//        //std::cout << "Coordinate 4 centro marker X: " << a4.x << " Y: "<< a4.y << std::endl;
-//        cv::Point3f b4 = mt[3]->findCoord3D(a4);
-
-
-        //Spostare la visualizzazione fuori dalla classe che è meglio!!
+        // let the user see
         for(int i = 0; i< IR_WINDOWS.size(); i++)
         {
             mt[i]->getIRFrame(frame);
-            //mt[i]->getDepthFrame(depth);
             mt[i]->getOutputFrame(out);
 
+            // Lighten up the image to improve visualization
             frame.convertTo(frame,CV_8UC1, 1.0/256);
             for( int y = 0; y < frame.rows; y++ )
             { for( int x = 0; x < frame.cols; x++ )
@@ -154,11 +137,11 @@ int main (int argc , char ** argv)
 
             imshow(IR_WINDOWS[i],frame);
             imshow(OUT_WINDOWS[i],out);
-
         }
         cv::waitKey(30);
 
         //std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;
+
         //Let the node run until it finishes
         ros::spinOnce();
     }
