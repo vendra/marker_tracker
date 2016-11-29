@@ -31,6 +31,9 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     Y = 0.0;
     Z = 0.0;
 
+    roiX_ = 0;
+    roiY_ = 0;
+
     image_path_ = image_path;
     depth_path_ = depth_path;
     //    std::cout << Counter::howMany() << std::endl;
@@ -125,19 +128,24 @@ void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
 
 void MarkerTracker::setROI(int x, int y)
 {
-    //std::cout << "X , Y = " << x << " , " << y << std::endl;
-    for (int j = 0; j < x; j++)
-        for (int i = 0; i < y; i++)
-            frame_.at<uchar>(i,j) = 0;
+    roiX_ = x;
+    roiY_ = y;
+    this->applyROI();
 
+}
+
+void MarkerTracker::applyROI()
+{
+    for (int j = 0; j < roiX_; j++)
+        for (int i = 0; i < roiY_; i++)
+            frame_.at<uchar>(i,j) = 0;
 }
 
 cv::Point2f MarkerTracker::findMarker()
 {
-
     int threshold = 80;
 
-
+    this->applyROI();
     cv::Mat img_black;
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8UC1, 1.0/256);
@@ -228,12 +236,28 @@ bool MarkerTracker::hasIR()
     return (!frame_.empty());
 }
 
-void MarkerTracker::getFrame(cv::Mat &image)
+void MarkerTracker::getIRFrame(cv::Mat &image)
 {
     if (frame_.empty())
-        ROS_INFO("Frame vuoto");
+        ROS_INFO("Empty IR Frame");
+    else
+        image = frame_;
+}
 
-    image = frame_;
+void MarkerTracker::getDepthFrame(cv::Mat &depth)
+{
+    if (depth_frame_.empty())
+        ROS_INFO("Empty Depth Frame!");
+    else
+        depth = depth_frame_;
+}
+
+void MarkerTracker::getOutputFrame(cv::Mat &out)
+{
+    if (im_with_keypoints_.empty())
+        ROS_INFO("Output image with keypoints is empty");
+    else
+        out = im_with_keypoints_;
 }
 
 

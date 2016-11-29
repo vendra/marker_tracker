@@ -31,6 +31,7 @@ private:
     float f_x, f_y, c_x, c_y;
     float X,Y,Z;
     bool flag;
+    int roiX_, roiY_;
     //static int ID_;
     int currentID_;
     std::string image_path_, depth_path_;
@@ -55,6 +56,8 @@ public:
 
     void setROI(int x, int y);
 
+    void applyROI();
+
     // Segment the IR image and find (u,v) coordinates of the marker
     cv::Point2f findMarker();
 
@@ -62,7 +65,11 @@ public:
 
     bool hasIR();
 
-    void getFrame(cv::Mat& image);
+    void getIRFrame(cv::Mat& image);
+
+    void getDepthFrame(cv::Mat& depth);
+
+    void getOutputFrame(cv::Mat& out);
 
     void visualize();
 

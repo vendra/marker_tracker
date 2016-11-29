@@ -66,8 +66,8 @@ int main (int argc , char ** argv)
 
     cv::startWindowThread();
     cv::namedWindow("Setup");
-    cv::namedWindow("Sliders");
-    cv::Mat frame;
+
+    cv::Mat frame, depth, out;
 
     ros::spinOnce();
     ros::Duration(2.0).sleep();
@@ -75,22 +75,22 @@ int main (int argc , char ** argv)
 
     int x_slider = 0;
     int y_slider = 0;
-    cv::createTrackbar("X", "Sliders", &x_slider, 1024);
-    cv::createTrackbar("Y", "Sliders", &y_slider, 512);
 
     std::cout << "Press q to confirm and proceed" << std::endl;
     char c;
     for (auto i = 0; i < mt.size(); ++i)
     {
+        x_slider = 0;
+        y_slider = 0;
+        cv::createTrackbar("X", "Setup", &x_slider, 1024);
+        cv::createTrackbar("Y", "Setup", &y_slider, 512);
         while(true)
         {
             ros::spinOnce();
-            mt[i]->getFrame(frame);
+            mt[i]->getIRFrame(frame);
             mt[i]->setROI(x_slider,y_slider);
             if (!frame.empty())
                 cv::imshow("Setup", frame);
-            //else
-            //ROS_INFO("Image empty");
 
             c = cv::waitKey(30);
             if (c == 'q')
@@ -114,34 +114,49 @@ int main (int argc , char ** argv)
     while(nh.ok())
     {
 
+        for (auto i = 0; i < mt.size(); ++i)
+        {
+            cv::Point2f a1 = mt[i]->findMarker();
+            //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
+            cv::Point3f b1 = mt[0]->findCoord3D(a1);
+            //std::cout << "---------------------------------------------------------------" << std::endl;
+        }
 
-
-                cv::Point2f a1 = mt[0]->findMarker();
-                //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
-                cv::Point3f b1 = mt[0]->findCoord3D(a1);
-                //std::cout << "---------------------------------------------------------------" << std::endl;
-                cv::Point2f a2 = mt[1]->findMarker();
-                //std::cout << "Coordinate 2 centro marker X: " << a2.x << " Y: "<< a2.y << std::endl;
-                cv::Point3f b2 = mt[1]->findCoord3D(a2);
-                //std::cout << "---------------------------------------------------------------" << std::endl;
-                cv::Point2f a3 = mt[2]->findMarker();
-                //std::cout << "Coordinate 3 centro marker X: " << a3.x << " Y: "<< a3.y << std::endl;
-                cv::Point3f b3 = mt[2]->findCoord3D(a3);
-                //std::cout << "---------------------------------------------------------------" << std::endl;
-                cv::Point2f a4 = mt[3]->findMarker();
-                //std::cout << "Coordinate 4 centro marker X: " << a4.x << " Y: "<< a4.y << std::endl;
-                cv::Point3f b4 = mt[3]->findCoord3D(a4);
+//        cv::Point2f a2 = mt[1]->findMarker();
+//        //std::cout << "Coordinate 2 centro marker X: " << a2.x << " Y: "<< a2.y << std::endl;
+//        cv::Point3f b2 = mt[1]->findCoord3D(a2);
+//        //std::cout << "---------------------------------------------------------------" << std::endl;
+//        cv::Point2f a3 = mt[2]->findMarker();
+//        //std::cout << "Coordinate 3 centro marker X: " << a3.x << " Y: "<< a3.y << std::endl;
+//        cv::Point3f b3 = mt[2]->findCoord3D(a3);
+//        //std::cout << "---------------------------------------------------------------" << std::endl;
+//        cv::Point2f a4 = mt[3]->findMarker();
+//        //std::cout << "Coordinate 4 centro marker X: " << a4.x << " Y: "<< a4.y << std::endl;
+//        cv::Point3f b4 = mt[3]->findCoord3D(a4);
 
 
         //Spostare la visualizzazione fuori dalla classe che è meglio!!
-                for(int i = 0; i< IR_WINDOWS.size(); i++)
-                {
-                    mt[i]->getFrame(frame);
-                    imshow(IR_WINDOWS[i],frame);
-                    imshow(OUT_WINDOWS[i],frame);
+        for(int i = 0; i< IR_WINDOWS.size(); i++)
+        {
+            mt[i]->getIRFrame(frame);
+            //mt[i]->getDepthFrame(depth);
+            mt[i]->getOutputFrame(out);
 
+            frame.convertTo(frame,CV_8UC1, 1.0/256);
+            for( int y = 0; y < frame.rows; y++ )
+            { for( int x = 0; x < frame.cols; x++ )
+                { for( int c = 0; c < 3; c++ )
+                    {
+                        frame.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( frame.at<uchar>(y,x))  );
+                    }
                 }
-                cv::waitKey(30);
+            }
+
+            imshow(IR_WINDOWS[i],frame);
+            imshow(OUT_WINDOWS[i],out);
+
+        }
+        cv::waitKey(30);
 
         //std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;
         //Let the node run until it finishes
