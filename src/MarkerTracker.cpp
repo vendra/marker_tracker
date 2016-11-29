@@ -230,8 +230,6 @@ bool MarkerTracker::hasIR()
 
 void MarkerTracker::getFrame(cv::Mat &image)
 {
-    std::cout << "MAT: " << frame_ << std::endl;
-
     if (frame_.empty())
         ROS_INFO("Frame vuoto");
 

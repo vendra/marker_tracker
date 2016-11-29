@@ -39,15 +39,14 @@ int main (int argc , char ** argv)
     // Conviene sistemare e creare un array di mt. cosi da evitare di creare a mano tutto
     //Nel setup faccio un pushback ogni volta, da sistemare
 
-    std::vector<MarkerTracker> mt;
-    MarkerTracker a("/kinect2_10/ir/image", "/kinect2_10/depth/image");
+    std::vector<std::shared_ptr<MarkerTracker>> mt;
     mt.clear();
-    mt.push_back(a);
-    mt.push_back(MarkerTracker("/kinect2_12/ir/image", "/kinect2_12/depth/image"));
-    mt.push_back(MarkerTracker("/kinect2_13/ir/image", "/kinect2_13/depth/image"));
-    mt.push_back(MarkerTracker("/kinect2_16/ir/image", "/kinect2_16/depth/image"));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_10/ir/image", "/kinect2_10/depth/image"));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_12/ir/image", "/kinect2_12/depth/image"));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_13/ir/image", "/kinect2_13/depth/image"));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_16/ir/image", "/kinect2_16/depth/image"));
 
-    //mt[0] = a;
+
 
     std::cout << "numero oggetti " << mt.size() << std::endl;
     std::vector<std::string> IR_WINDOWS;
@@ -68,7 +67,7 @@ int main (int argc , char ** argv)
     cv::startWindowThread();
     cv::namedWindow("Setup");
     cv::namedWindow("Sliders");
-    cv::Mat frame; 
+    cv::Mat frame;
 
     ros::spinOnce();
     ros::Duration(2.0).sleep();
@@ -81,17 +80,22 @@ int main (int argc , char ** argv)
 
     std::cout << "Press q to confirm and proceed" << std::endl;
     char c;
-    while(true)
+    for (auto i = 0; i < mt.size(); ++i)
     {
-        mt[0].getFrame(frame);
-        if (!frame.empty())
-            cv::imshow("Setup", frame);
-        //else
+        while(true)
+        {
+            ros::spinOnce();
+            mt[i]->getFrame(frame);
+            mt[i]->setROI(x_slider,y_slider);
+            if (!frame.empty())
+                cv::imshow("Setup", frame);
+            //else
             //ROS_INFO("Image empty");
-        mt[0].setROI(x_slider,y_slider);
-        c = cv::waitKey(30);
-        if (c == 'q')
-            break;
+
+            c = cv::waitKey(30);
+            if (c == 'q')
+                break;
+        }
     }
 
     cv::destroyWindow("Setup");
@@ -112,32 +116,32 @@ int main (int argc , char ** argv)
 
 
 
-        cv::Point2f a1 = mt[1].findMarker();
-        //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
-        cv::Point3f b1 = mt[1].findCoord3D(a1);
-        //std::cout << "---------------------------------------------------------------" << std::endl;
-        cv::Point2f a2 = mt[2].findMarker();
-        //std::cout << "Coordinate 2 centro marker X: " << a2.x << " Y: "<< a2.y << std::endl;
-        cv::Point3f b2 = mt[2].findCoord3D(a2);
-        //std::cout << "---------------------------------------------------------------" << std::endl;
-        cv::Point2f a3 = mt[3].findMarker();
-        //std::cout << "Coordinate 3 centro marker X: " << a3.x << " Y: "<< a3.y << std::endl;
-        cv::Point3f b3 = mt[3].findCoord3D(a3);
-        //std::cout << "---------------------------------------------------------------" << std::endl;
-        cv::Point2f a4 = mt[4].findMarker();
-        //std::cout << "Coordinate 4 centro marker X: " << a4.x << " Y: "<< a4.y << std::endl;
-        cv::Point3f b4 = mt[4].findCoord3D(a4);
+                cv::Point2f a1 = mt[0]->findMarker();
+                //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
+                cv::Point3f b1 = mt[0]->findCoord3D(a1);
+                //std::cout << "---------------------------------------------------------------" << std::endl;
+                cv::Point2f a2 = mt[1]->findMarker();
+                //std::cout << "Coordinate 2 centro marker X: " << a2.x << " Y: "<< a2.y << std::endl;
+                cv::Point3f b2 = mt[1]->findCoord3D(a2);
+                //std::cout << "---------------------------------------------------------------" << std::endl;
+                cv::Point2f a3 = mt[2]->findMarker();
+                //std::cout << "Coordinate 3 centro marker X: " << a3.x << " Y: "<< a3.y << std::endl;
+                cv::Point3f b3 = mt[2]->findCoord3D(a3);
+                //std::cout << "---------------------------------------------------------------" << std::endl;
+                cv::Point2f a4 = mt[3]->findMarker();
+                //std::cout << "Coordinate 4 centro marker X: " << a4.x << " Y: "<< a4.y << std::endl;
+                cv::Point3f b4 = mt[3]->findCoord3D(a4);
 
 
         //Spostare la visualizzazione fuori dalla classe che è meglio!!
-//        for(int i = 0; i< IR_WINDOWS.size(); i++)
-//        {
-//            mt[i].getFrame(frame);
-//            imshow(IR_WINDOWS[i],frame);
-//            imshow(OUT_WINDOWS[i],frame);
+                for(int i = 0; i< IR_WINDOWS.size(); i++)
+                {
+                    mt[i]->getFrame(frame);
+                    imshow(IR_WINDOWS[i],frame);
+                    imshow(OUT_WINDOWS[i],frame);
 
-//        }
-//        cv::waitKey(30);
+                }
+                cv::waitKey(30);
 
         //std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;
         //Let the node run until it finishes
