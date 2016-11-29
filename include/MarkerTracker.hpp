@@ -25,21 +25,14 @@ private:
     image_transport::Subscriber depth_sub_;
     image_transport::Publisher image_pub_;
     ros::Subscriber info_sub_;
-    cv::Mat frame_, depth_frame_, roi_frame_;
-    cv::Mat im_with_keypoints_;
+    cv::Mat frame_, depth_frame_, im_with_keypoints_;
     cv::Mat D,K,R,P;
     float f_x, f_y, c_x, c_y;
     float X,Y,Z;
-    bool flag;
+    bool camera_info_flag_;
     int roiX_, roiY_;
-    //static int ID_;
-    int currentID_;
     std::string image_path_, depth_path_;
 
-    //Queste sono da sistemare con la variabile
-    //std::string IR_WINDOW;
-    //std::string DEPTH_WINDOW;
-    //std::string OUTPUT_WINDOW;
 
 public:
     MarkerTracker(std::string image_path, std::string depth_path);
@@ -70,8 +63,6 @@ public:
     void getDepthFrame(cv::Mat& depth);
 
     void getOutputFrame(cv::Mat& out);
-
-    void visualize();
 
 };
 

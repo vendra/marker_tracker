@@ -19,8 +19,7 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
 
-    flag = false;
-    //image_pub_ = it_.advertise("/image_converter/output_video", 1);
+    camera_info_flag_ = false;
 
     // Initializes values
     f_x = 0.0;
@@ -31,40 +30,12 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
     Y = 0.0;
     Z = 0.0;
 
+    // no ROI
     roiX_ = 0;
     roiY_ = 0;
 
     image_path_ = image_path;
     depth_path_ = depth_path;
-    //    std::cout << Counter::howMany() << std::endl;
-    //    currentID_ = Counter::howMany();
-
-    //    IR_WINDOW = "IR Window" + std::to_string(currentID_);
-    //    DEPTH_WINDOW = "Depth Window" + std::to_string(currentID_);
-    //    OUTPUT_WINDOW = "Output Window" + std::to_string(currentID_);
-
-
-    //    cv::namedWindow(IR_WINDOW);
-    //    //cv::namedWindow(DEPTH_WINDOW);
-    //    cv::namedWindow(OUTPUT_WINDOW);
-}
-
-MarkerTracker::MarkerTracker(const MarkerTracker &copia)
-    : it_(nh_)
-{
-    image_sub_ = it_.subscribe(copia.image_path_, 5, &MarkerTracker::imageCb, this);
-    depth_sub_ = it_.subscribe(copia.depth_path_, 5, &MarkerTracker::depthCb, this);
-    info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
-
-    f_x = copia.f_x;
-    f_y = copia.f_y;
-    c_x = copia.c_x;
-    c_y = copia.c_y;
-    X = copia.X;
-    Y = copia.Y;
-    Z = copia.Z;
-
-    frame_ = copia.frame_;
 }
 
 MarkerTracker::~MarkerTracker()
@@ -106,7 +77,7 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr& msg)
 
 void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
 {
-    if (!flag)
+    if (!camera_info_flag_)
     {
         f_x = msg->K[0];
         f_y = msg->K[4];
@@ -118,9 +89,7 @@ void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
         std::cout << "f_y: " << f_y << std::endl;
         std::cout << "c_x: " << c_x << std::endl;
         std::cout << "c_y: " << c_y << std::endl;
-        flag = true;
-
-
+        camera_info_flag_ = true;
     }
 
 }
@@ -221,7 +190,7 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
     // std::cout << "Z: " << Z << std::endl;
 
 
-    // calcolo X e Y
+    // compute X e Y
     X = (point.x - c_x) * Z / f_x;
     Y = (point.y - c_y) * Z / f_y;
 
@@ -261,23 +230,3 @@ void MarkerTracker::getOutputFrame(cv::Mat &out)
 }
 
 
-
-void MarkerTracker::visualize() //rimuovere
-{
-    cv::Mat out;
-    frame_.convertTo(out, CV_8UC1, 1.0/256);
-    //cv::equalizeHist(out,out);
-    for( int y = 0; y < out.rows; y++ )
-    { for( int x = 0; x < out.cols; x++ )
-        { for( int c = 0; c < 3; c++ )
-            {
-                out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
-            }
-        }
-    }
-
-    //cv::imshow(IR_WINDOW, out);
-    //cv::imshow(OUTPUT_WINDOW, im_with_keypoints_);
-    //cv::imshow(DEPTH_WINDOW, depth_frame_);
-    //cv::waitKey(30);
-}
