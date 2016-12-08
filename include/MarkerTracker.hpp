@@ -31,13 +31,13 @@ private:
     float X,Y,Z;
     bool camera_info_flag_;
     int roiX_, roiY_;
+    std::vector<cv::KeyPoint> keypoints_;
     std::string image_path_, depth_path_;
+
 
 
 public:
     MarkerTracker(std::string image_path, std::string depth_path);
-
-    MarkerTracker(const MarkerTracker &copia);
 
     ~MarkerTracker();
 
@@ -49,7 +49,7 @@ public:
 
     void setROI(int x, int y);
 
-    void applyROI();
+    void applyROI(); //private?
 
     // Segment the IR image and find (u,v) coordinates of the marker
     cv::Point2f findMarker();

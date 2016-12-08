@@ -87,8 +87,21 @@ int main (int argc , char ** argv)
             ros::spinOnce();
             mt[i]->getIRFrame(frame);
             mt[i]->setROI(x_slider,y_slider);
+
+            frame.convertTo(frame,CV_8UC1, 1.0/256);
             if (!frame.empty())
+            {
+                for( int y = 0; y < frame.rows; y++ )
+                { for( int x = 0; x < frame.cols; x++ )
+                    { for( int c = 0; c < 3; c++ )
+                        {
+                            frame.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( frame.at<uchar>(y,x))  );
+                        }
+                    }
+                }
                 cv::imshow("Setup", frame);
+            }
+
 
             c = cv::waitKey(30);
             if (c == 'q')
@@ -102,10 +115,7 @@ int main (int argc , char ** argv)
 
     // Create new Windows
     for (int i = 0; i < IR_WINDOWS.size(); i++)
-    {
-        cv::namedWindow(IR_WINDOWS[i]);
         cv::namedWindow(OUT_WINDOWS[i]);
-    }
 
     while(nh.ok())
     {
@@ -121,21 +131,7 @@ int main (int argc , char ** argv)
         // let the user see
         for(int i = 0; i< IR_WINDOWS.size(); i++)
         {
-            mt[i]->getIRFrame(frame);
             mt[i]->getOutputFrame(out);
-
-            // Lighten up the image to improve visualization
-            frame.convertTo(frame,CV_8UC1, 1.0/256);
-            for( int y = 0; y < frame.rows; y++ )
-            { for( int x = 0; x < frame.cols; x++ )
-                { for( int c = 0; c < 3; c++ )
-                    {
-                        frame.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( frame.at<uchar>(y,x))  );
-                    }
-                }
-            }
-
-            imshow(IR_WINDOWS[i],frame);
             imshow(OUT_WINDOWS[i],out);
         }
         cv::waitKey(30);

@@ -110,6 +110,7 @@ void MarkerTracker::applyROI()
             frame_.at<uchar>(i,j) = 0;
 }
 
+
 cv::Point2f MarkerTracker::findMarker()
 {
     int threshold = 80;
@@ -120,6 +121,8 @@ cv::Point2f MarkerTracker::findMarker()
     img_source.convertTo(img_source, CV_8UC1, 1.0/256);
 
     //cv::Mat img_prova = cv::imread("/home/federico/blob_detection.jpg");
+
+    // Maybe add setParam to change them and load default from file? save to file? XML
 
     cv::SimpleBlobDetector::Params params;
     params.minDistBetweenBlobs = 20.0f;
@@ -138,20 +141,17 @@ cv::Point2f MarkerTracker::findMarker()
 
     cv::SimpleBlobDetector detector(params);
 
-    std::vector<cv::KeyPoint> keypoints;
 
     //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
-    detector.detect(img_source, keypoints);
-
-
-    cv::threshold(img_source, img_black, 255, 255, cv::THRESH_BINARY);
-    cv::drawKeypoints( img_black, keypoints, im_with_keypoints_, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    detector.detect(img_source, keypoints_);
 
     std::vector<cv::Point2f> punti;
-    //cv::KeyPoint::convert(punti, keypoints);
+    //cv::KeyPoint::convert(punti, keypoints_);
     //std::cout << "Mat 8U: " << img_source << std::endl;
 
+
+    //Debug
     /*
     for (int i = 0; i < img_source.rows; ++i)
         for (int j = 0; j < img_source.cols; ++j)
@@ -159,16 +159,13 @@ cv::Point2f MarkerTracker::findMarker()
             if (img_source.at<uchar>(i,j) > 250)
                 std::cout << "Trovato pixel alto: " << std::endl;
         }
-*/
-    //std::cout << "Numero di keypoints: " << keypoints.size() << std::endl;
+    */
+
+    //std::cout << "Numero di keypoints_: " << keypoints_.size() << std::endl;
 
     cv::Point2f p;
-    for(int i = 0; i < keypoints.size(); ++i)
-    {
-        //std::cout << "disegnato keypoint!" << std::endl;
-        p = keypoints[i].pt;
-        cv::circle(im_with_keypoints_, p, 3, cv::Scalar(0,255,0), 1);
-    }
+    for(int i = 0; i < keypoints_.size(); ++i)
+        p = keypoints_[i].pt;
 
     // Ritorna l ultimo keypoint, solitamente però è uno.
     // Aggiungere dei controlli qui
@@ -223,10 +220,31 @@ void MarkerTracker::getDepthFrame(cv::Mat &depth)
 
 void MarkerTracker::getOutputFrame(cv::Mat &out)
 {
-    if (im_with_keypoints_.empty())
-        ROS_INFO("Output image with keypoints is empty");
+    if (frame_.empty())
+    {
+        ROS_INFO("Cannot render output image with keypoints");
+    }
     else
-        out = im_with_keypoints_;
+    {
+        cv::Mat im;
+        //im = frame_;
+        frame_.convertTo(im, CV_8UC1, 1.0/256);
+
+        //cv::drawKeypoints( frame_, keypoints_, im_with_keypoints_, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT );
+
+        // Brighten image to visualize it easily
+        for( int y = 0; y < im.rows; y++ )
+            for( int x = 0; x < im.cols; x++ )
+                for( int c = 0; c < 3; c++ )
+                    im.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( im.at<uchar>(y,x)) );
+
+        cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
+
+        for (int i = 0; i < keypoints_.size(); ++i)
+          cv::circle(im, keypoints_[i].pt, 5, cv::Scalar(0,255,0), 2);
+
+        out = im;
+    }
 }
 
 
