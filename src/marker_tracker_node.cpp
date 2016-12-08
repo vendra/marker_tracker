@@ -1,5 +1,6 @@
-/*
- *  Copyright (c) 2016-, VENDRAMIN FEDERICO <federico.vendramin@gmail.com>
+/*  Elaborazione dei dati tridimensionali - Università degli studi di Padova
+ *
+ *  Copyright (c) 2016- VENDRAMIN FEDERICO <federico.vendramin@gmail.com>
  *
  *  All rights reserved.
  *
@@ -45,64 +46,50 @@ int main (int argc , char ** argv)
     mt.push_back(std::make_shared<MarkerTracker>("/kinect2_16/ir/image", "/kinect2_16/depth/image"));
 
     std::cout << "Object count: " << mt.size() << std::endl;
-    std::vector<std::string> IR_WINDOWS;
+
     std::vector<std::string> OUT_WINDOWS;
-
-    IR_WINDOWS.clear();
-    IR_WINDOWS.push_back("IR 1");
-    IR_WINDOWS.push_back("IR 2");
-    IR_WINDOWS.push_back("IR 3");
-    IR_WINDOWS.push_back("IR 4");
-
     OUT_WINDOWS.clear();
-    OUT_WINDOWS.push_back("OUT 1");
-    OUT_WINDOWS.push_back("OUT 2");
-    OUT_WINDOWS.push_back("OUT 3");
-    OUT_WINDOWS.push_back("OUT 4");
-
-    cv::startWindowThread();
-    cv::namedWindow("Setup");
-
-    cv::Mat frame, depth, out;
+    OUT_WINDOWS.push_back("Output 1");
+    OUT_WINDOWS.push_back("Output 2");
+    OUT_WINDOWS.push_back("Output 3");
+    OUT_WINDOWS.push_back("Output 4");
 
     // wait for images to be published
     ros::spinOnce();
     ros::Duration(2.0).sleep();
     ros::spinOnce();
 
+    cv::Mat frame, depth, out;
     int x_slider = 0;
     int y_slider = 0;
 
-    ROS_INFO("Press q to confirm and proceed");
+    cv::startWindowThread();
+    cv::namedWindow("Setup");
 
+    ROS_INFO("Press q to confirm and proceed");
     char c;
     for (auto i = 0; i < mt.size(); ++i)
     {
         x_slider = 0;
         y_slider = 0;
         cv::createTrackbar("X", "Setup", &x_slider, 1024);
-        cv::createTrackbar("Y", "Setup", &y_slider, 512);
+        cv::createTrackbar("Y", "Setup", &y_slider, 424);
         while(true)
         {
             ros::spinOnce();
             mt[i]->getIRFrame(frame);
             mt[i]->setROI(x_slider,y_slider);
+            mt[i]->findMarker();
+            mt[i]->getOutputFrame(out);
 
-            frame.convertTo(frame,CV_8UC1, 1.0/256);
-            if (!frame.empty())
+            if (!out.empty())
             {
-                for( int y = 0; y < frame.rows; y++ )
-                { for( int x = 0; x < frame.cols; x++ )
-                    { for( int c = 0; c < 3; c++ )
-                        {
-                            frame.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( frame.at<uchar>(y,x))  );
-                        }
-                    }
-                }
-                cv::imshow("Setup", frame);
+                for( int y = 0; y < y_slider; y++ )
+                    for( int x = 0; x < x_slider; x++ )
+                        out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
             }
 
-
+            cv::imshow("Setup", out);
             c = cv::waitKey(30);
             if (c == 'q')
                 break;
@@ -114,12 +101,11 @@ int main (int argc , char ** argv)
     ROS_INFO("Setup Completed");
 
     // Create new Windows
-    for (int i = 0; i < IR_WINDOWS.size(); i++)
+    for (int i = 0; i < OUT_WINDOWS.size(); i++)
         cv::namedWindow(OUT_WINDOWS[i]);
 
     while(nh.ok())
     {
-
         for (auto i = 0; i < mt.size(); ++i)
         {
             cv::Point2f a1 = mt[i]->findMarker();
@@ -129,7 +115,7 @@ int main (int argc , char ** argv)
         }
 
         // let the user see
-        for(int i = 0; i< IR_WINDOWS.size(); i++)
+        for(int i = 0; i< OUT_WINDOWS.size(); i++)
         {
             mt[i]->getOutputFrame(out);
             imshow(OUT_WINDOWS[i],out);
@@ -140,6 +126,9 @@ int main (int argc , char ** argv)
 
         //Let the node run until it finishes
         ros::spinOnce();
+        c = cv::waitKey(30);
+        if (c == 'q')
+            break;
     }
     return 0;
 }
