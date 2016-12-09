@@ -29,7 +29,6 @@ catkin_package(
 add_custom_target(${PROJECT_NAME}_HEADERS
 	SOURCES
  	include/marker_tracker_node.hpp
-	include/template.hpp
 )
 
 include_directories(
@@ -43,9 +42,12 @@ add_library(${PROJECT_NAME} src/marker_tracker_node.cpp)
 add_library(MarkerTracker include/MarkerTracker.hpp src/MarkerTracker.cpp)
 target_link_libraries(MarkerTracker ${OpenCV_LIBRARIES})
 
+add_library(Kalman3D include/Kalman3D.hpp src/Kalman3D.cpp)
+target_link_libraries(Kalman3D ${OpenCV_LIBRARIES})
+
 
 add_executable(marker_tracker_node src/marker_tracker_node.cpp)
-target_link_libraries(marker_tracker_node MarkerTracker
+target_link_libraries(marker_tracker_node MarkerTracker Kalman3D
 	${PROJECT_NAME}
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
