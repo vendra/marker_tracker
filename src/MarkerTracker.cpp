@@ -139,12 +139,11 @@ cv::Point2f MarkerTracker::findMarker()
     params.minArea = .5; //1
     params.maxArea = 2.0; // 30
 
-    cv::SimpleBlobDetector detector(params);
-
-
+    // cv::SimpleBlobDetector detector(params);
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params); //OpencV 3
     //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
-    detector.detect(img_source, keypoints_);
+    detector->detect(img_source, keypoints_);
 
     std::vector<cv::Point2f> punti;
     //cv::KeyPoint::convert(punti, keypoints_);
