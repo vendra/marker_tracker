@@ -25,6 +25,7 @@ private:
     image_transport::Publisher image_pub_;
     ros::Subscriber info_sub_;
     cv::Mat frame_, depth_frame_, im_with_keypoints_;
+    cv::Mat cameraMatrix, distCoeffs;
     cv::Mat D,K,R,P;
     float f_x, f_y, c_x, c_y;
     float X,Y,Z;
@@ -38,12 +39,16 @@ private:
 
 
 public:
-    MarkerTracker(std::string image_path, std::string depth_path, std::string param_path);
+    MarkerTracker(std::string image_path, std::string depth_path,
+                  std::string param_path, std::string calib_path);
 
     ~MarkerTracker();
 
-    //Loads class parameter from .XML file
-    bool readInputParam(std::string path);//Should be private?
+    //Loads class parameter from .YAML file
+    bool readInputParams(std::string path);//Should be private?
+
+    //Loads intrinsic camera parameters from .YAML 
+    bool readCameraParams(std::string path);
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 

@@ -10,7 +10,7 @@
 
 
 MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
-                             std::string param_path)
+                             std::string param_path, std::string calib_path)
     : it_(nh_)
 {
     // Counting object with static variable, such that every camera has its image displayed in correct window
@@ -18,15 +18,17 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     // Subscribe to input video feed and publish output video feed
     image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
     depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
-    info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
+    //info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
 
-    camera_info_flag_ = false;
+    //camera_info_flag_ = false;
 
-    // Initializes values
-    f_x = 0.0;
+    // Initializes intrinsic params 
+    f_x = 0.0; // not used anymore? Use cv::Mat cameraMatrix instead
     f_y = 0.0;
     c_x = 0.0;
     c_y = 0.0;
+
+    //3D point
     X = 0.0;
     Y = 0.0;
     Z = 0.0;
@@ -38,8 +40,11 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     image_path_ = image_path;
     depth_path_ = depth_path;
 
+    //Reads calibration from file
+    readCameraParams(calib_path);
+
     //Reads param from file
-    readInputParam(param_path);
+    readInputParams(param_path);
 
     //Init Blob Detector
     detector = cv::SimpleBlobDetector::create(params);
@@ -50,9 +55,10 @@ MarkerTracker::~MarkerTracker()
     //cv::destroyAllWindows();
 }
 
-bool MarkerTracker::readInputParam(std::string path){
+bool MarkerTracker::readInputParams(std::string path)
+{
 
-    std::cout << "Reading input file.. \n";
+    std::cout << "Reading blob parameters from input file.. \n";
 
     cv::FileStorage fs(path, cv::FileStorage::READ);
     if ( !fs.isOpened() )
@@ -79,7 +85,29 @@ bool MarkerTracker::readInputParam(std::string path){
     fs["minArea"]             >> params.minArea;
     fs["maxArea"]             >> params.maxArea;
 
+    return true;
 }
+
+bool MarkerTracker::readCameraParams(std::string path)
+{
+    std::cout << "Reading camera parameters from input file.. \n";
+
+    cv::FileStorage fs(path, cv::FileStorage::READ);
+    if ( !fs.isOpened() )
+    {
+        std::cout << "Cannot open " << path << std::endl;
+        return false;
+    }
+
+    fs["cameraMatrix"] >> cameraMatrix;
+    fs["distCoeffs"]   >> distCoeffs;
+
+    std::cout << "Camera calibration parameters OK!" << std::endl;
+    std::cout << "camera matrix: " << cameraMatrix << std::endl;
+    std::cout << "distortion coeffs: " << distCoeffs << std::endl;
+
+}
+
 
 void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
@@ -113,7 +141,7 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr& msg)
 
 }
 
-void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
+/*void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
 {
     if (!camera_info_flag_)
     {
@@ -130,7 +158,7 @@ void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
         camera_info_flag_ = true;
     }
 
-}
+}*/
 
 
 void MarkerTracker::setROI(int x, int y)

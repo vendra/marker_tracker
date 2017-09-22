@@ -39,27 +39,14 @@ int main (int argc , char ** argv)
     //TEST param xml
     std::string path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
     std::cout << path << std::endl;
-    MarkerTracker myTest("prova", "prova", path);
+    MarkerTracker tracker("prova", "prova", path, "path/to/param.yaml");
 
-    myTest.readInputParam(path);
+    //myTest.readInputParams(path);
 
     // vector of MarkerTracker, one for each kinect
     std::vector<std::shared_ptr<MarkerTracker>> mt;
 
-    mt.clear();
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_10/ir/image", "/kinect2_10/depth/image", path));
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_12/ir/image", "/kinect2_12/depth/image", path));
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_13/ir/image", "/kinect2_13/depth/image", path));
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_16/ir/image", "/kinect2_16/depth/image", path));
-
-    std::cout << "Object count: " << mt.size() << std::endl;
-
-    std::vector<std::string> OUT_WINDOWS;
-    OUT_WINDOWS.clear();
-    OUT_WINDOWS.push_back("Output 1");
-    OUT_WINDOWS.push_back("Output 2");
-    OUT_WINDOWS.push_back("Output 3");
-    OUT_WINDOWS.push_back("Output 4");
+    
 
     // wait for images to be published
     ros::spinOnce();
@@ -75,58 +62,51 @@ int main (int argc , char ** argv)
 
     ROS_INFO("Press q to confirm and proceed");
     char c;
-    for (auto i = 0; i < mt.size(); ++i)
+
+    x_slider = 0;
+    y_slider = 0;
+    cv::createTrackbar("X", "Setup", &x_slider, 1024);
+    cv::createTrackbar("Y", "Setup", &y_slider, 424);
+    while(true)
     {
-        x_slider = 0;
-        y_slider = 0;
-        cv::createTrackbar("X", "Setup", &x_slider, 1024);
-        cv::createTrackbar("Y", "Setup", &y_slider, 424);
-        while(true)
+        ros::spinOnce();
+        tracker.getIRFrame(frame);
+        tracker.setROI(x_slider,y_slider);
+        tracker.findMarker();
+        tracker.getOutputFrame(out);
+
+        if (!out.empty())
         {
-            ros::spinOnce();
-            mt[i]->getIRFrame(frame);
-            mt[i]->setROI(x_slider,y_slider);
-            mt[i]->findMarker();
-            mt[i]->getOutputFrame(out);
-
-            if (!out.empty())
-            {
-                for( int y = 0; y < y_slider; y++ )
-                    for( int x = 0; x < x_slider; x++ )
-                        out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
-            }
-
-            cv::imshow("Setup", out);
-            c = cv::waitKey(30);
-            if (c == 'q')
-                break;
+            for( int y = 0; y < y_slider; y++ )
+                for( int x = 0; x < x_slider; x++ )
+                    out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
         }
+
+        cv::imshow("Setup", out);
+        c = cv::waitKey(30);
+        if (c == 'q')
+            break;
     }
+    
 
     cv::destroyWindow("Setup");
     cv::waitKey(30);
     ROS_INFO("Setup Completed");
 
     // Create new Windows
-    for (int i = 0; i < OUT_WINDOWS.size(); i++)
-        cv::namedWindow(OUT_WINDOWS[i]);
+    cv::namedWindow("Output");
 
     while(nh.ok())
     {
-        for (auto i = 0; i < mt.size(); ++i)
-        {
-            cv::Point2f a1 = mt[i]->findMarker();
-            //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
-            cv::Point3f b1 = mt[0]->findCoord3D(a1);
-            //std::cout << "---------------------------------------------------------------" << std::endl;
-        }
+        cv::Point2f a1 = tracker.findMarker();
+        //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
+        cv::Point3f b1 = tracker.findCoord3D(a1);
+        //std::cout << "---------------------------------------------------------------" << std::endl;
 
         // let the user see
-        for(int i = 0; i< OUT_WINDOWS.size(); i++)
-        {
-            mt[i]->getOutputFrame(out);
-            imshow(OUT_WINDOWS[i],out);
-        }
+
+        tracker.getOutputFrame(out);
+        imshow("Output",out);
         cv::waitKey(30);
 
         //std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;
@@ -137,5 +117,6 @@ int main (int argc , char ** argv)
         if (c == 'q')
             break;
     }
+
     return 0;
 }
