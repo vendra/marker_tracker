@@ -29,18 +29,20 @@
 
 #include <marker_tracker_node.hpp>
 #include <MarkerTracker.hpp>
+#include <ros/console.h>
 
-
-int main (int argc , char ** argv)
+int main (int argc , char* argv[])
 {
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
     ros::NodeHandle nh("~");
 
     //Read ID
-    std::string id;
+    std::string id = argv[1];
     nh.getParam("id", id); 
-    std::cout << "ID read: " << id << std::endl;
-    
+    std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
+
+    //ROS_ERROR(argv[1]);
+
     //For now all nodes uses the same YAML but its easy to replace using files with
     //id.yaml and reading those instead 
     std::string param_path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
@@ -48,7 +50,7 @@ int main (int argc , char ** argv)
     std::cout << "param path: " << param_path << std::endl;
     std::cout << "calib path: " << calib_path << std::endl;
 
-    MarkerTracker tracker("/"+id+"/ir/image/compressed", "/"+id+"/depth/image/compressedDepth",
+    MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image",
                           param_path, calib_path);
 
 

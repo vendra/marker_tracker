@@ -1,0 +1,3 @@
+<launch>
+        <node name="k2" pkg="marker_tracker" type="marker_tracker_node" args="k2" />
+</launch>
