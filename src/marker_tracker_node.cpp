@@ -34,19 +34,23 @@
 int main (int argc , char ** argv)
 {
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
 
-    //TEST param xml
-    std::string path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
-    std::cout << path << std::endl;
-    MarkerTracker tracker("prova", "prova", path, "path/to/param.yaml");
-
-    //myTest.readInputParams(path);
-
-    // vector of MarkerTracker, one for each kinect
-    std::vector<std::shared_ptr<MarkerTracker>> mt;
-
+    //Read ID
+    std::string id;
+    nh.getParam("id", id); 
+    std::cout << "ID read: " << id << std::endl;
     
+    //For now all nodes uses the same YAML but its easy to replace using files with
+    //id.yaml and reading those instead 
+    std::string param_path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
+    std::string calib_path = ros::package::getPath("marker_tracker")+"/param/"+id+".yaml";
+    std::cout << "param path: " << param_path << std::endl;
+    std::cout << "calib path: " << calib_path << std::endl;
+
+    MarkerTracker tracker("/"+id+"/ir/image/compressed", "/"+id+"/depth/image/compressedDepth",
+                          param_path, calib_path);
+
 
     // wait for images to be published
     ros::spinOnce();
