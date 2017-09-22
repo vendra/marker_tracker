@@ -9,7 +9,8 @@
 #include <MarkerTracker.hpp>
 
 
-MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
+MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
+                             std::string param_path)
     : it_(nh_)
 {
     // Counting object with static variable, such that every camera has its image displayed in correct window
@@ -36,11 +37,48 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path)
 
     image_path_ = image_path;
     depth_path_ = depth_path;
+
+    //Reads param from file
+    readInputParam(param_path);
+
+    //Init Blob Detector
+    detector = cv::SimpleBlobDetector::create(params);
 }
 
 MarkerTracker::~MarkerTracker()
 {
     //cv::destroyAllWindows();
+}
+
+bool MarkerTracker::readInputParam(std::string path){
+
+    std::cout << "Reading input file.. \n";
+
+    cv::FileStorage fs(path, cv::FileStorage::READ);
+    if ( !fs.isOpened() )
+    {
+        std::cout << "Cannot open " << path << std::endl;
+        return false;
+    }
+
+    fs["minDistBetweenBlobs"] >> params.minDistBetweenBlobs;
+    fs["minThreshold"]        >> params.minThreshold;
+    fs["maxThreshold"]        >> params.maxThreshold;
+    fs["filterByInertia"]     >> params.filterByInertia;
+    fs["minInertiaRatio"]     >> params.minInertiaRatio;
+    fs["maxInertiaRatio"]     >> params.maxInertiaRatio;
+    fs["filterByConvexity"]   >> params.filterByConvexity;
+    fs["minConvexity"]        >> params.minConvexity;
+    fs["maxConvexity"]        >> params.maxConvexity;
+    fs["filterByColor"]       >> params.filterByColor;
+    fs["blobColor"]           >> params.blobColor;
+    fs["filterByCircularity"] >> params.filterByCircularity;
+    fs["minCircularity"]      >> params.minCircularity;
+    fs["maxCircularity"]      >> params.maxCircularity;
+    fs["filterByArea"]        >> params.filterByArea;
+    fs["minArea"]             >> params.minArea;
+    fs["maxArea"]             >> params.maxArea;
+
 }
 
 void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -113,8 +151,6 @@ void MarkerTracker::applyROI()
 
 cv::Point2f MarkerTracker::findMarker()
 {
-    int threshold = 80;
-
     this->applyROI();
     cv::Mat img_black;
     cv::Mat img_source = frame_;
@@ -122,31 +158,29 @@ cv::Point2f MarkerTracker::findMarker()
 
     //cv::Mat img_prova = cv::imread("/home/federico/blob_detection.jpg");
 
-    // Maybe add setParam to change them and load default from file? save to file? XML
+//    cv::SimpleBlobDetector::Params params;
+//    params.minDistBetweenBlobs = 20.0f;
+//    params.minThreshold = 10; // 100
+//    params.maxThreshold = 255; //255
 
-    cv::SimpleBlobDetector::Params params;
-    params.minDistBetweenBlobs = 20.0f;
-    params.minThreshold = 10; // 100
-    params.maxThreshold = 255; //255
+//    params.filterByInertia = false;
+//    params.filterByConvexity = false;
+//    params.filterByColor = false;
+//    params.blobColor = 255; //255
+//    params.filterByCircularity = false;
 
-    params.filterByInertia = false;
-    params.filterByConvexity = false;
-    params.filterByColor = false;
-    params.blobColor = 255; //255
-    params.filterByCircularity = false;
-
-    params.filterByArea = true;
-    params.minArea = .5; //1
-    params.maxArea = 2.0; // 30
+//    params.filterByArea = true;
+//    params.minArea = .5; //1
+//    params.maxArea = 2.0; // 30
 
     // cv::SimpleBlobDetector detector(params);
-    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params); //OpencV 3
+//    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params); //OpencV 3
     //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
     detector->detect(img_source, keypoints_);
 
-    std::vector<cv::Point2f> punti;
-    //cv::KeyPoint::convert(punti, keypoints_);
+    //std::vector<cv::Point2f> points;
+    //cv::KeyPoint::convert(points, keypoints_);
     //std::cout << "Mat 8U: " << img_source << std::endl;
 
 
@@ -160,11 +194,12 @@ cv::Point2f MarkerTracker::findMarker()
         }
     */
 
-    //std::cout << "Numero di keypoints_: " << keypoints_.size() << std::endl;
+    //std::cout << "Number of keypoints_: " << keypoints_.size() << std::endl;
 
     cv::Point2f p;
     for(int i = 0; i < keypoints_.size(); ++i)
         p = keypoints_[i].pt;
+
 
     // Ritorna l ultimo keypoint, solitamente però è uno.
     // Aggiungere dei controlli qui

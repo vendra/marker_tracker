@@ -32,13 +32,18 @@ private:
     int roiX_, roiY_;
     std::vector<cv::KeyPoint> keypoints_;
     std::string image_path_, depth_path_;
+    cv::SimpleBlobDetector::Params params;
+    cv::Ptr<cv::SimpleBlobDetector> detector;
 
 
 
 public:
-    MarkerTracker(std::string image_path, std::string depth_path);
+    MarkerTracker(std::string image_path, std::string depth_path, std::string param_path);
 
     ~MarkerTracker();
+
+    //Loads class parameter from .XML file
+    bool readInputParam(std::string path);//Should be private?
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 

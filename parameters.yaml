@@ -1,0 +1,18 @@
+%YAML:1.0
+minDistBetweenBlobs: 20.0
+minThreshold: 10
+maxThreshold: 255
+filterByInertia: false
+minInertiaRatio: 0
+maxInertiaRatio: 0
+filterByConvexity: false
+minConvexity: 0
+maxConvexity: 0
+filterByColor: false
+blobColor: 255
+filterByCircularity: false
+minCircularity: 0
+maxCircularity: 0
+filterByArea: true
+minArea: .5
+maxArea: 2.0

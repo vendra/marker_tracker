@@ -42,12 +42,9 @@ add_library(${PROJECT_NAME} src/marker_tracker_node.cpp)
 add_library(MarkerTracker include/MarkerTracker.hpp src/MarkerTracker.cpp)
 target_link_libraries(MarkerTracker ${OpenCV_LIBRARIES})
 
-add_library(Kalman3D include/Kalman3D.hpp src/Kalman3D.cpp)
-target_link_libraries(Kalman3D ${OpenCV_LIBRARIES})
-
 
 add_executable(marker_tracker_node src/marker_tracker_node.cpp)
-target_link_libraries(marker_tracker_node MarkerTracker Kalman3D
+target_link_libraries(marker_tracker_node MarkerTracker 
 	${PROJECT_NAME}
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}

@@ -36,14 +36,21 @@ int main (int argc , char ** argv)
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
     ros::NodeHandle nh;
 
+    //TEST param xml
+    std::string path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
+    std::cout << path << std::endl;
+    MarkerTracker myTest("prova", "prova", path);
+
+    myTest.readInputParam(path);
+
     // vector of MarkerTracker, one for each kinect
     std::vector<std::shared_ptr<MarkerTracker>> mt;
 
     mt.clear();
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_10/ir/image", "/kinect2_10/depth/image"));
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_12/ir/image", "/kinect2_12/depth/image"));
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_13/ir/image", "/kinect2_13/depth/image"));
-    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_16/ir/image", "/kinect2_16/depth/image"));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_10/ir/image", "/kinect2_10/depth/image", path));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_12/ir/image", "/kinect2_12/depth/image", path));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_13/ir/image", "/kinect2_13/depth/image", path));
+    mt.push_back(std::make_shared<MarkerTracker>("/kinect2_16/ir/image", "/kinect2_16/depth/image", path));
 
     std::cout << "Object count: " << mt.size() << std::endl;
 
