@@ -35,11 +35,11 @@ int main (int argc , char* argv[])
 {
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
     ros::NodeHandle nh("~");
-
+    
     //Read ID
     std::string id = argv[1];
     nh.getParam("id", id); 
-    std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
+    //std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
 
     //ROS_ERROR(argv[1]);
 
@@ -50,7 +50,7 @@ int main (int argc , char* argv[])
     std::cout << "param path: " << param_path << std::endl;
     std::cout << "calib path: " << calib_path << std::endl;
 
-    MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image",
+    MarkerTracker tracker("/"+id+"/ir/image/compressed", "/"+id+"/depth/image/compressedDepth",
                           param_path, calib_path);
 
 
@@ -73,10 +73,14 @@ int main (int argc , char* argv[])
     y_slider = 0;
     cv::createTrackbar("X", "Setup", &x_slider, 1024);
     cv::createTrackbar("Y", "Setup", &y_slider, 424);
-    while(true)
+
+    bool exit_key_pressed = false;
+    while (!exit_key_pressed)
     {
         ros::spinOnce();
+        cv::Mat frame_depth;
         tracker.getIRFrame(frame);
+        tracker.getDepthFrame(frame_depth);
         tracker.setROI(x_slider,y_slider);
         tracker.findMarker();
         tracker.getOutputFrame(out);
@@ -88,10 +92,10 @@ int main (int argc , char* argv[])
                     out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
         }
 
-        cv::imshow("Setup", out);
+        cv::imshow("Setup", frame_depth);
         c = cv::waitKey(30);
         if (c == 'q')
-            break;
+            exit_key_pressed = true;
     }
     
 
@@ -103,7 +107,7 @@ int main (int argc , char* argv[])
     cv::namedWindow("Output");
 
     while(nh.ok())
-    {
+    {   
         cv::Point2f a1 = tracker.findMarker();
         //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
         cv::Point3f b1 = tracker.findCoord3D(a1);

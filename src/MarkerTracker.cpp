@@ -16,9 +16,11 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     // Counting object with static variable, such that every camera has its image displayed in correct window
 
     // Subscribe to input video feed and publish output video feed
-    image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
-    depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
+    //image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
+    //depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     //info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
+    ros::Subscriber depth_sub_tmp = nh_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
+    ros::Subscriber ir_sub_tmp = nh_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
 
     //camera_info_flag_ = false;
 
@@ -109,7 +111,7 @@ bool MarkerTracker::readCameraParams(std::string path)
 }
 
 
-void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
+void MarkerTracker::imageCb(const sensor_msgs::CompressedImageConstPtr& msg)
 {
     cv_bridge::CvImagePtr cv_ptr;
     try
@@ -125,7 +127,8 @@ void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 }
 
-void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr& msg)
+
+void MarkerTracker::depthCb(const sensor_msgs::CompressedImageConstPtr& msg)
 {
     cv_bridge::CvImagePtr cv_ptr;
     try
@@ -183,7 +186,7 @@ cv::Point2f MarkerTracker::findMarker()
     cv::Mat img_black;
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8UC1, 1.0/256);
-
+    
     //cv::Mat img_prova = cv::imread("/home/federico/blob_detection.jpg");
 
 //    cv::SimpleBlobDetector::Params params;
@@ -240,7 +243,7 @@ cv::Point2f MarkerTracker::findMarker()
 cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 {
 
-
+    std::cout << "pre uZ\n";
     // in (u,v) trovo valore di Z corrispondente
     unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y);
     Z = static_cast<float>(uZ)/1000;
@@ -248,11 +251,11 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
     //if (Z != 0)
     // std::cout << "Z: " << Z << std::endl;
 
-
+    std::cout << "preCompute XY\n";
     // compute X e Y
     X = (point.x - c_x) * Z / f_x;
     Y = (point.y - c_y) * Z / f_y;
-
+    std::cout << "XY computer\n";
 
     // ritorno point3f (XYZ)
     return cv::Point3f(X,Y,Z);

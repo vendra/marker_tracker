@@ -50,9 +50,9 @@ public:
     //Loads intrinsic camera parameters from .YAML 
     bool readCameraParams(std::string path);
 
-    void imageCb(const sensor_msgs::ImageConstPtr& msg);
+    void imageCb(const sensor_msgs::CompressedImageConstPtr& msg);
 
-    void depthCb(const sensor_msgs::ImageConstPtr& msg);
+    void depthCb(const sensor_msgs::CompressedImageConstPtr& msg);
 
     void cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg);
 
