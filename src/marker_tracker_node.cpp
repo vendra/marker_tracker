@@ -31,6 +31,33 @@
 #include <MarkerTracker.hpp>
 #include <ros/console.h>
 
+
+void mouseClick(int event, int x, int y, int flags, void* maskPoints)
+{
+     if  ( event == cv::EVENT_LBUTTONDOWN )
+     {
+          std::cout << "Set mask in position (" << x << ", " << y << ")" << std::endl;
+          std::vector<cv::Point2f> *maskPointPtr = static_cast<std::vector<cv::Point2f> *>(maskPoints);
+          cv::Point2f pt = cv::Point2f(x,y);
+          (*maskPointPtr).push_back(pt);
+     }
+     else if  ( event == cv::EVENT_RBUTTONDOWN )
+     {
+          std::cout << "Right button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
+     }
+     else if  ( event == cv::EVENT_MBUTTONDOWN )
+     {
+          std::cout << "Reset mask" << std::endl;
+     }
+     else if ( event == cv::EVENT_MOUSEMOVE )
+     {
+          std::cout << "Mouse move over the window - position (" << x << ", " << y << ")" << std::endl;
+
+     }
+}
+
+
+
 int main (int argc , char* argv[])
 {
     ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
@@ -50,7 +77,7 @@ int main (int argc , char* argv[])
     std::cout << "param path: " << param_path << std::endl;
     std::cout << "calib path: " << calib_path << std::endl;
 
-    MarkerTracker tracker("/"+id+"/ir/image/compressed", "/"+id+"/depth/image/compressedDepth",
+    MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image/compressedDepth",
                           param_path, calib_path);
 
 
@@ -62,17 +89,20 @@ int main (int argc , char* argv[])
     cv::Mat frame, depth, out;
     int x_slider = 0;
     int y_slider = 0;
+    std::vector<cv::Point2f> maskPoints;
 
+    
     cv::startWindowThread();
-    cv::namedWindow("Setup");
+    cv::namedWindow(id+"Setup");
+    cv::setMouseCallback(id+"Setup", mouseClick, &maskPoints);
 
     ROS_INFO("Press q to confirm and proceed");
     char c;
 
     x_slider = 0;
     y_slider = 0;
-    cv::createTrackbar("X", "Setup", &x_slider, 1024);
-    cv::createTrackbar("Y", "Setup", &y_slider, 424);
+    cv::createTrackbar("X", id+"Setup", &x_slider, 1024);
+    cv::createTrackbar("Y", id+"Setup", &y_slider, 424);
 
     bool exit_key_pressed = false;
     while (!exit_key_pressed)
@@ -80,31 +110,34 @@ int main (int argc , char* argv[])
         ros::spinOnce();
         cv::Mat frame_depth;
         tracker.getIRFrame(frame);
-        tracker.getDepthFrame(frame_depth);
+        //tracker.getDepthFrame(frame_depth);
         tracker.setROI(x_slider,y_slider);
         tracker.findMarker();
         tracker.getOutputFrame(out);
+        //cv::circle(out, )
 
         if (!out.empty())
         {
             for( int y = 0; y < y_slider; y++ )
-                for( int x = 0; x < x_slider; x++ )
+                for( int x = 0; x < x_slider; x++  )
                     out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
         }
 
-        cv::imshow("Setup", frame_depth);
+        cv::imshow(id+"Setup", out);
         c = cv::waitKey(30);
         if (c == 'q')
             exit_key_pressed = true;
+        if (c== '.')
+            tracker.readInputParams(param_path);
     }
     
 
-    cv::destroyWindow("Setup");
+    cv::destroyWindow(id+"Setup");
     cv::waitKey(30);
     ROS_INFO("Setup Completed");
 
     // Create new Windows
-    cv::namedWindow("Output");
+    cv::namedWindow(id+"Output");
 
     while(nh.ok())
     {   
@@ -116,7 +149,7 @@ int main (int argc , char* argv[])
         // let the user see
 
         tracker.getOutputFrame(out);
-        imshow("Output",out);
+        imshow(id+"Output",out);
         cv::waitKey(30);
 
         //std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;

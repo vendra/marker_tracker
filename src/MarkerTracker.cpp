@@ -16,11 +16,11 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     // Counting object with static variable, such that every camera has its image displayed in correct window
 
     // Subscribe to input video feed and publish output video feed
-    //image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
+    image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
     //depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     //info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
     ros::Subscriber depth_sub_tmp = nh_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
-    ros::Subscriber ir_sub_tmp = nh_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
+    //ros::Subscriber ir_sub_tmp = nh_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
 
     //camera_info_flag_ = false;
 
@@ -72,6 +72,7 @@ bool MarkerTracker::readInputParams(std::string path)
     fs["minDistBetweenBlobs"] >> params.minDistBetweenBlobs;
     fs["minThreshold"]        >> params.minThreshold;
     fs["maxThreshold"]        >> params.maxThreshold;
+    fs["thresholdStep"]       >> params.thresholdStep;
     fs["filterByInertia"]     >> params.filterByInertia;
     fs["minInertiaRatio"]     >> params.minInertiaRatio;
     fs["maxInertiaRatio"]     >> params.maxInertiaRatio;
@@ -86,6 +87,8 @@ bool MarkerTracker::readInputParams(std::string path)
     fs["filterByArea"]        >> params.filterByArea;
     fs["minArea"]             >> params.minArea;
     fs["maxArea"]             >> params.maxArea;
+
+    std::cout << "maxArea: " << params.maxArea << std::endl;
 
     return true;
 }
@@ -111,7 +114,7 @@ bool MarkerTracker::readCameraParams(std::string path)
 }
 
 
-void MarkerTracker::imageCb(const sensor_msgs::CompressedImageConstPtr& msg)
+void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
     cv_bridge::CvImagePtr cv_ptr;
     try
@@ -204,11 +207,11 @@ cv::Point2f MarkerTracker::findMarker()
 //    params.minArea = .5; //1
 //    params.maxArea = 2.0; // 30
 
-    // cv::SimpleBlobDetector detector(params);
-//    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params); //OpencV 3
+    //cv::Ptr<cv::SimpleBlobDetector> detector_new = cv::SimpleBlobDetector::create(params); //OpencV 3
     //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
     detector->detect(img_source, keypoints_);
+    //detector_new->detect(img_source, keypoints_);
 
     //std::vector<cv::Point2f> points;
     //cv::KeyPoint::convert(points, keypoints_);
@@ -225,7 +228,8 @@ cv::Point2f MarkerTracker::findMarker()
         }
     */
 
-    //std::cout << "Number of keypoints_: " << keypoints_.size() << std::endl;
+    //if (keypoints_.size() != 0)
+    //    std::cout << "Number of keypoints_: " << keypoints_.size() << std::endl;
 
     cv::Point2f p;
     for(int i = 0; i < keypoints_.size(); ++i)
@@ -298,11 +302,12 @@ void MarkerTracker::getOutputFrame(cv::Mat &out)
         //cv::drawKeypoints( frame_, keypoints_, im_with_keypoints_, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT );
 
         // Brighten image to visualize it easily
-        for( int y = 0; y < im.rows; y++ )
+        
+         for( int y = 0; y < im.rows; y++ )
             for( int x = 0; x < im.cols; x++ )
                 for( int c = 0; c < 3; c++ )
                     im.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( im.at<uchar>(y,x)) );
-
+        
         cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
 
         for (int i = 0; i < keypoints_.size(); ++i)
