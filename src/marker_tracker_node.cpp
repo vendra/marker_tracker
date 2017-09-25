@@ -48,10 +48,12 @@ void mouseClick(int event, int x, int y, int flags, void* maskPoints)
      else if  ( event == cv::EVENT_MBUTTONDOWN )
      {
           std::cout << "Reset mask" << std::endl;
+          std::vector<cv::Point2f> *maskPointPtr = static_cast<std::vector<cv::Point2f> *>(maskPoints);          
+          (*maskPointPtr).resize(0);
      }
      else if ( event == cv::EVENT_MOUSEMOVE )
      {
-          std::cout << "Mouse move over the window - position (" << x << ", " << y << ")" << std::endl;
+          //std::cout << "Mouse move over the window - position (" << x << ", " << y << ")" << std::endl;
 
      }
 }
@@ -114,7 +116,7 @@ int main (int argc , char* argv[])
         tracker.setROI(x_slider,y_slider);
         tracker.findMarker();
         tracker.getOutputFrame(out);
-        //cv::circle(out, )
+        
 
         if (!out.empty())
         {
@@ -122,6 +124,9 @@ int main (int argc , char* argv[])
                 for( int x = 0; x < x_slider; x++  )
                     out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
         }
+
+        for(int i=0; i < maskPoints.size(); ++i)
+            cv::circle(out, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
 
         cv::imshow(id+"Setup", out);
         c = cv::waitKey(30);
