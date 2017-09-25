@@ -79,9 +79,8 @@ int main (int argc , char* argv[])
     std::cout << "param path: " << param_path << std::endl;
     std::cout << "calib path: " << calib_path << std::endl;
 
-    MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image/compressedDepth",
+    MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image",
                           param_path, calib_path);
-
 
     // wait for images to be published
     ros::spinOnce();
@@ -110,21 +109,23 @@ int main (int argc , char* argv[])
     while (!exit_key_pressed)
     {
         ros::spinOnce();
-        cv::Mat frame_depth;
+        //cv::Mat frame_depth;
         tracker.getIRFrame(frame);
         //tracker.getDepthFrame(frame_depth);
-        tracker.setROI(x_slider,y_slider);
+        //tracker.setROI(x_slider,y_slider);
         tracker.findMarker();
         tracker.getOutputFrame(out);
         
-
-        if (!out.empty())
+        //ROI setup visulization
+        /*if (!out.empty())
         {
             for( int y = 0; y < y_slider; y++ )
                 for( int x = 0; x < x_slider; x++  )
                     out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
-        }
+        }*/
 
+        //Only visualization!!!!!!!
+        //Apply black mask
         for(int i=0; i < maskPoints.size(); ++i)
             cv::circle(out, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
 
@@ -132,7 +133,7 @@ int main (int argc , char* argv[])
         c = cv::waitKey(30);
         if (c == 'q')
             exit_key_pressed = true;
-        if (c== '.')
+        if (c== '.') 
             tracker.readInputParams(param_path);
     }
     

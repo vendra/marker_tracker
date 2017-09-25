@@ -15,6 +15,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/features2d/features2d.hpp>
 
+
 class MarkerTracker
 {
 private:
@@ -52,7 +53,7 @@ public:
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 
-    void depthCb(const sensor_msgs::CompressedImageConstPtr& msg);
+    void depthCb(const sensor_msgs::ImageConstPtr& msg);
 
     void cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg);
 
@@ -66,6 +67,8 @@ public:
     cv::Point3f findCoord3D(cv::Point2f point);
 
     bool hasIR();
+
+    bool hasDepth();
 
     void getIRFrame(cv::Mat& image);
 
