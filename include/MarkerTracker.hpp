@@ -36,6 +36,7 @@ private:
     std::string image_path_, depth_path_;
     cv::SimpleBlobDetector::Params params;
     cv::Ptr<cv::SimpleBlobDetector> detector;
+    std::vector<cv::Point2f> maskPoints;
 
 
 
@@ -43,7 +44,7 @@ public:
     MarkerTracker(std::string image_path, std::string depth_path,
                   std::string param_path, std::string calib_path);
 
-    ~MarkerTracker();
+    //~MarkerTracker();
 
     //Loads class parameter from .YAML file
     bool readInputParams(std::string path);//Should be private?
@@ -61,6 +62,8 @@ public:
 
     void applyROI(); //private?
 
+    void setMask(const std::vector<cv::Point2f> mask);
+
     // Segment the IR image and find (u,v) coordinates of the marker
     cv::Point2f findMarker();
 
@@ -73,6 +76,8 @@ public:
     void getIRFrame(cv::Mat& image);
 
     void getDepthFrame(cv::Mat& depth);
+
+    void setDepthFrame(const cv::Mat& depth);
 
     void getOutputFrame(cv::Mat& out);
 

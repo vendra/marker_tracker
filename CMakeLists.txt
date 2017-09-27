@@ -32,6 +32,7 @@ add_custom_target(${PROJECT_NAME}_HEADERS
 )
 
 include_directories(
+  include ${catkin_INCLUDE_DIRS}
 	include
 	${PROJECT_SOURCE_DIR}/include
 	${catkin_INCLUDE_DIRS}
@@ -51,3 +52,7 @@ target_link_libraries(marker_tracker_node MarkerTracker
 )
 
 
+add_executable(marker_decoder_node src/marker_decoder_node.cpp)
+target_link_libraries(marker_decoder_node MarkerTracker 
+	${catkin_LIBRARIES}
+)

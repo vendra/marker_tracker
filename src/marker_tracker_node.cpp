@@ -31,6 +31,30 @@
 #include <MarkerTracker.hpp>
 #include <ros/console.h>
 
+cv::Mat depth_frame;
+cv_bridge::CvImagePtr cv_ptr;
+
+void depthCb(const sensor_msgs::ImageConstPtr&  msg)
+{
+    try
+    {
+        //Decode
+		cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+		depth_frame = cv_ptr->image;
+        //cv::imshow("view", cv_bridge::toCvShare(msg, "16UC1")->image);
+		//cv::waitKey(30);
+		//REPUBLISH
+		//sensor_msgs::ImagePtr msg_to_send = cv_bridge::CvImage(std_msgs::Header(), "16UC1", cv_ptr->image).toImageMsg();
+		//depth_pub.publish(msg_to_send);
+		
+    }
+    catch (cv_bridge::Exception& e)
+    {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+}
 
 void mouseClick(int event, int x, int y, int flags, void* maskPoints)
 {
@@ -81,7 +105,9 @@ int main (int argc , char* argv[])
 
     MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image",
                           param_path, calib_path);
-
+    
+    ros::Subscriber sub = nh.subscribe("/"+id+"/depth/image", 100, depthCb);
+    
     // wait for images to be published
     ros::spinOnce();
     ros::Duration(2.0).sleep();
@@ -147,8 +173,9 @@ int main (int argc , char* argv[])
 
     while(nh.ok())
     {   
+        tracker.setDepthFrame(depth_frame);
         cv::Point2f a1 = tracker.findMarker();
-        //std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
+        std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
         cv::Point3f b1 = tracker.findCoord3D(a1);
         //std::cout << "---------------------------------------------------------------" << std::endl;
 
@@ -158,7 +185,7 @@ int main (int argc , char* argv[])
         imshow(id+"Output",out);
         cv::waitKey(30);
 
-        //std::cout << "Coordinate 3D X: " << b.x << " Y: " << b.y << " Z: " << b.z << std::endl;
+        std::cout << "Coordinate 3D X: " << b1.x << " Y: " << b1.y << " Z: " << b1.z << std::endl;
 
         //Let the node run until it finishes
         ros::spinOnce();

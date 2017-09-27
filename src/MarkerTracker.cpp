@@ -17,7 +17,7 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
 
     // Subscribe to input video feed and publish output video feed
     image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
-    depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
+    //depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     //info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
     //ros::Subscriber depth_sub_tmp = nh_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     //ros::Subscriber ir_sub_tmp = nh_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
@@ -52,10 +52,10 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     detector = cv::SimpleBlobDetector::create(params);
 }
 
-MarkerTracker::~MarkerTracker()
-{
-    //cv::destroyAllWindows();
-}
+// MarkerTracker::~MarkerTracker()
+// {
+//     //cv::destroyAllWindows();
+// }
 
 bool MarkerTracker::readInputParams(std::string path)
 {
@@ -182,41 +182,28 @@ void MarkerTracker::applyROI()
             frame_.at<uchar>(i,j) = 0;
 }
 
+void MarkerTracker::setMask(const std::vector<cv::Point2f> points)
+{
+    maskPoints = points;
+}
+
+/*void MarkerTracker::applyMask()
+{
+
+}*/
+
 
 cv::Point2f MarkerTracker::findMarker()
 {
-    this->applyROI();
+    this->applyROI(); //Deprecated, use points now
+    
     cv::Mat img_black;
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8UC1, 1.0/256);
     
-    //cv::Mat img_prova = cv::imread("/home/federico/blob_detection.jpg");
-
-//    cv::SimpleBlobDetector::Params params;
-//    params.minDistBetweenBlobs = 20.0f;
-//    params.minThreshold = 10; // 100
-//    params.maxThreshold = 255; //255
-
-//    params.filterByInertia = false;
-//    params.filterByConvexity = false;
-//    params.filterByColor = false;
-//    params.blobColor = 255; //255
-//    params.filterByCircularity = false;
-
-//    params.filterByArea = true;
-//    params.minArea = .5; //1
-//    params.maxArea = 2.0; // 30
-
-    //cv::Ptr<cv::SimpleBlobDetector> detector_new = cv::SimpleBlobDetector::create(params); //OpencV 3
     //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
     detector->detect(img_source, keypoints_);
-    //detector_new->detect(img_source, keypoints_);
-
-    //std::vector<cv::Point2f> points;
-    //cv::KeyPoint::convert(points, keypoints_);
-    //std::cout << "Mat 8U: " << img_source << std::endl;
-
 
     //Debug
     /*
@@ -247,7 +234,7 @@ cv::Point2f MarkerTracker::findMarker()
 cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 {
 
-    std::cout << "pre uZ\n";
+    //std::cout << "pre uZ\n";
     // in (u,v) trovo valore di Z corrispondente
     unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y);
     Z = static_cast<float>(uZ)/1000;
@@ -255,11 +242,11 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
     //if (Z != 0)
     // std::cout << "Z: " << Z << std::endl;
 
-    std::cout << "preCompute XY\n";
+    //std::cout << "preCompute XY\n";
     // compute X e Y
     X = (point.x - c_x) * Z / f_x;
     Y = (point.y - c_y) * Z / f_y;
-    std::cout << "XY computer\n";
+    //std::cout << "XY computer\n";
 
     // ritorno point3f (XYZ)
     return cv::Point3f(X,Y,Z);
@@ -290,6 +277,11 @@ void MarkerTracker::getDepthFrame(cv::Mat &depth)
         ROS_INFO("Empty Depth Frame!");
     else
         depth = depth_frame_;
+}
+
+void MarkerTracker::setDepthFrame(const cv::Mat &depth)
+{
+    depth_frame_ = depth;
 }
 
 void MarkerTracker::getOutputFrame(cv::Mat &out)
