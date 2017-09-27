@@ -22,16 +22,15 @@ private:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
-    image_transport::Subscriber depth_sub_;
-    image_transport::Publisher image_pub_;
-    ros::Subscriber info_sub_;
+    //image_transport::Subscriber depth_sub_;
+    //image_transport::Publisher image_pub_;
+    //ros::Subscriber info_sub_;
     cv::Mat frame_, depth_frame_, im_with_keypoints_;
     cv::Mat cameraMatrix, distCoeffs;
     cv::Mat D,K,R,P;
     float f_x, f_y, c_x, c_y;
     float X,Y,Z;
     bool camera_info_flag_;
-    int roiX_, roiY_;
     std::vector<cv::KeyPoint> keypoints_;
     std::string image_path_, depth_path_;
     cv::SimpleBlobDetector::Params params;
@@ -43,8 +42,6 @@ private:
 public:
     MarkerTracker(std::string image_path, std::string depth_path,
                   std::string param_path, std::string calib_path);
-
-    //~MarkerTracker();
 
     //Loads class parameter from .YAML file
     bool readInputParams(std::string path);//Should be private?

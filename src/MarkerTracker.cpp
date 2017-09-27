@@ -35,10 +35,6 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     Y = 0.0;
     Z = 0.0;
 
-    // no ROI
-    roiX_ = 0;
-    roiY_ = 0;
-
     image_path_ = image_path;
     depth_path_ = depth_path;
 
@@ -51,11 +47,6 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     //Init Blob Detector
     detector = cv::SimpleBlobDetector::create(params);
 }
-
-// MarkerTracker::~MarkerTracker()
-// {
-//     //cv::destroyAllWindows();
-// }
 
 bool MarkerTracker::readInputParams(std::string path)
 {
@@ -147,26 +138,6 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr&  msg)
 
 }
 
-/*void MarkerTracker::cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg)
-{
-    if (!camera_info_flag_)
-    {
-        f_x = msg->K[0];
-        f_y = msg->K[4];
-        c_x = msg->K[2];
-        c_y = msg->K[5];
-
-        std::cout << "Camera calibration parameters OK!" << std::endl;
-        std::cout << "f_x: " << f_x << std::endl;
-        std::cout << "f_y: " << f_y << std::endl;
-        std::cout << "c_x: " << c_x << std::endl;
-        std::cout << "c_y: " << c_y << std::endl;
-        camera_info_flag_ = true;
-    }
-
-}*/
-
-
 void MarkerTracker::setMask(const std::vector<cv::Point2f> points)
 {
     maskPoints = points;
@@ -182,7 +153,6 @@ void MarkerTracker::applyMask()
 
 cv::Point2f MarkerTracker::findMarker()
 {
-    //this->applyROI(); //Deprecated, use points now
     applyMask();
     cv::Mat img_black;
     cv::Mat img_source = frame_;

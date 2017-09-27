@@ -94,8 +94,6 @@ int main (int argc , char* argv[])
     nh.getParam("id", id); 
     //std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
 
-    //ROS_ERROR(argv[1]);
-
     //For now all nodes uses the same YAML but its easy to replace using files with
     //id.yaml and reading those instead 
     std::string param_path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
@@ -113,9 +111,7 @@ int main (int argc , char* argv[])
     ros::Duration(2.0).sleep();
     ros::spinOnce();
 
-    cv::Mat frame, depth, out;
-    int x_slider = 0;
-    int y_slider = 0;
+    cv::Mat frame, out;
     std::vector<cv::Point2f> maskPoints;
 
     
@@ -124,21 +120,14 @@ int main (int argc , char* argv[])
     cv::setMouseCallback(id+"Setup", mouseClick, &maskPoints);
 
     ROS_INFO("Press q to confirm and proceed");
+    
     char c;
-
-    x_slider = 0;
-    y_slider = 0;
-    cv::createTrackbar("X", id+"Setup", &x_slider, 1024);
-    cv::createTrackbar("Y", id+"Setup", &y_slider, 424);
-
     bool exit_key_pressed = false;
     while (!exit_key_pressed)
     {
         ros::spinOnce();
-        //cv::Mat frame_depth;
+
         tracker.getIRFrame(frame);
-        //tracker.getDepthFrame(frame_depth);
-        //tracker.setROI(x_slider,y_slider);
         tracker.findMarker();
         tracker.getOutputFrame(out);
         
@@ -150,8 +139,7 @@ int main (int argc , char* argv[])
                     out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
         }*/
 
-        //Only visualization!!!!!!!
-        //Apply black mask
+        //View black mask
         for(int i=0; i < maskPoints.size(); ++i)
             cv::circle(out, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
 
@@ -164,25 +152,23 @@ int main (int argc , char* argv[])
     }
 
     tracker.setMask(maskPoints);
-    
 
     cv::destroyWindow(id+"Setup");
     cv::waitKey(30);
     ROS_INFO("Setup Completed");
 
-    // Create new Windows
+    // Create new Window
     cv::namedWindow(id+"Output");
 
     while(nh.ok())
     {   
         tracker.setDepthFrame(depth_frame);
         cv::Point2f a1 = tracker.findMarker();
-        std::cout << "Coordinate 1 centro marker X: " << a1.x << " Y: "<< a1.y << std::endl;
+        std::cout << "Coordinate 1 center marker X: " << a1.x << " Y: "<< a1.y << std::endl;
         cv::Point3f b1 = tracker.findCoord3D(a1);
         //std::cout << "---------------------------------------------------------------" << std::endl;
 
         // let the user see
-
         tracker.getOutputFrame(out);
         imshow(id+"Output",out);
         cv::waitKey(30);
