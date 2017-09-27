@@ -54,15 +54,13 @@ public:
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 
-    void depthCb(const sensor_msgs::ImageConstPtr& msg);
+    void depthCb(const sensor_msgs::ImageConstPtr& msg); //useless now
 
     void cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg);
 
-    void setROI(int x, int y);
-
-    void applyROI(); //private?
-
     void setMask(const std::vector<cv::Point2f> mask);
+
+    void applyMask(); //private
 
     // Segment the IR image and find (u,v) coordinates of the marker
     cv::Point2f findMarker();

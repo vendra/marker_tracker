@@ -167,36 +167,23 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr&  msg)
 }*/
 
 
-void MarkerTracker::setROI(int x, int y)
-{
-    roiX_ = x;
-    roiY_ = y;
-    this->applyROI();
-
-}
-
-void MarkerTracker::applyROI()
-{
-    for (int j = 0; j < roiX_; j++)
-        for (int i = 0; i < roiY_; i++)
-            frame_.at<uchar>(i,j) = 0;
-}
-
 void MarkerTracker::setMask(const std::vector<cv::Point2f> points)
 {
     maskPoints = points;
 }
 
-/*void MarkerTracker::applyMask()
-{
-
-}*/
+void MarkerTracker::applyMask()
+{   
+    //Mask clicked points
+    for(int i=0; i<maskPoints.size(); ++i)
+        cv::circle(frame_, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
+}
 
 
 cv::Point2f MarkerTracker::findMarker()
 {
-    this->applyROI(); //Deprecated, use points now
-    
+    //this->applyROI(); //Deprecated, use points now
+    applyMask();
     cv::Mat img_black;
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8UC1, 1.0/256);
@@ -211,7 +198,7 @@ cv::Point2f MarkerTracker::findMarker()
         for (int j = 0; j < img_source.cols; ++j)
         {
             if (img_source.at<uchar>(i,j) > 250)
-                std::cout << "Trovato pixel alto: " << std::endl;
+                std::cout << "Found pixel >250 intensity: " << std::endl;
         }
     */
 

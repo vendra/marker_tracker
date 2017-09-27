@@ -162,6 +162,8 @@ int main (int argc , char* argv[])
         if (c== '.') 
             tracker.readInputParams(param_path);
     }
+
+    tracker.setMask(maskPoints);
     
 
     cv::destroyWindow(id+"Setup");
