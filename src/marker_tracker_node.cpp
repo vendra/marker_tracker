@@ -117,6 +117,7 @@ int main (int argc , char* argv[])
     
     cv::startWindowThread();
     cv::namedWindow(id+"Setup");
+    cv::waitKey(30);
     cv::setMouseCallback(id+"Setup", mouseClick, &maskPoints);
 
     ROS_INFO("Press q to confirm and proceed");
@@ -128,6 +129,7 @@ int main (int argc , char* argv[])
         ros::spinOnce();
 
         tracker.getIRFrame(frame);
+        tracker.setMask(maskPoints);
         tracker.findMarker();
         tracker.getOutputFrame(out);
         

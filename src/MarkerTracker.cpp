@@ -48,7 +48,7 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     detector = cv::SimpleBlobDetector::create(params);
 }
 
-bool MarkerTracker::readInputParams(std::string path)
+bool MarkerTracker::readInputParams(std::string path) //make private
 {
 
     std::cout << "Reading blob parameters from input file.. \n";
@@ -79,12 +79,10 @@ bool MarkerTracker::readInputParams(std::string path)
     fs["minArea"]             >> params.minArea;
     fs["maxArea"]             >> params.maxArea;
 
-    std::cout << "maxArea: " << params.maxArea << std::endl;
-
     return true;
 }
 
-bool MarkerTracker::readCameraParams(std::string path)
+bool MarkerTracker::readCameraParams(std::string path) //make private
 {
     std::cout << "Reading camera parameters from input file.. \n";
 
@@ -257,11 +255,11 @@ void MarkerTracker::getOutputFrame(cv::Mat &out)
 
         // Brighten image to visualize it easily
         
-         for( int y = 0; y < im.rows; y++ )
+         /*for( int y = 0; y < im.rows; y++ )
             for( int x = 0; x < im.cols; x++ )
                 for( int c = 0; c < 3; c++ )
                     im.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( im.at<uchar>(y,x)) );
-
+*/
         cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
 
         for (int i = 0; i < keypoints_.size(); ++i)
