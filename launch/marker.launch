@@ -1,0 +1,12 @@
+<launch>
+        
+        <node pkg="marker_tracker" name="k1_decoder" type="marker_decoder_node" args="k1 _image_transport:=compressedDepth" />
+        <node pkg="marker_tracker" name="k1" type="marker_tracker_node" args="k1 _image_transport:=compressed" output="screen" />
+
+        <node pkg="marker_tracker" name="k2_decoder" type="marker_decoder_node" args="k2 _image_transport:=compressedDepth" />
+        <node pkg="marker_tracker" name="k2" type="marker_tracker_node" args="k2 _image_transport:=compressed" output="screen" />
+
+        <node pkg="marker_tracker" name="k3_decoder" type="marker_decoder_node" args="k3 _image_transport:=compressedDepth" />
+        <node pkg="marker_tracker" name="k3" type="marker_tracker_node" args="k3 _image_transport:=compressed" output="screen" />
+        
+</launch>
