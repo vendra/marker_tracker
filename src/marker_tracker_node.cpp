@@ -104,7 +104,7 @@ int main (int argc , char* argv[])
     MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image",
                           param_path, calib_path);
     
-    ros::Subscriber sub = nh.subscribe("/"+id+"/depth/image", 100, depthCb);
+    //ros::Subscriber sub = nh.subscribe("/"+id+"/depth/image", 100, depthCb);
     
     // wait for images to be published
     ros::spinOnce();
@@ -114,12 +114,14 @@ int main (int argc , char* argv[])
     cv::Mat frame, out;
     std::vector<cv::Point2f> maskPoints;
 
-    
+    int con_slider = 0;
+    int bri_slider = 0;
     cv::startWindowThread();
     cv::namedWindow(id+"Setup");
     cv::waitKey(30);
     cv::setMouseCallback(id+"Setup", mouseClick, &maskPoints);
-
+    cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
+    cv::createTrackbar("Brightness", id+"Setup", &bri_slider, 100);
     ROS_INFO("Press q to confirm and proceed");
     
     char c;
@@ -128,25 +130,26 @@ int main (int argc , char* argv[])
     {
         ros::spinOnce();
 
-        tracker.getIRFrame(frame);
+        //tracker.getIRFrame(frame);
         tracker.setMask(maskPoints);
         tracker.findMarker();
         tracker.getOutputFrame(out);
         
-        //ROI setup visulization
-        /*if (!out.empty())
+        //Brightness setup visulization
+        if (!out.empty())
         {
-            for( int y = 0; y < y_slider; y++ )
-                for( int x = 0; x < x_slider; x++  )
-                    out.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( out.at<uchar>(y,x))  );
-        }*/
+            for( int y = 0; y < out.rows; y++)
+                for( int x = 0; x < out.cols; x++)
+                 for(int c = 0; c < 3; c++)
+                     out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
+        }
 
         //View black mask
         for(int i=0; i < maskPoints.size(); ++i)
             cv::circle(out, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
 
         cv::imshow(id+"Setup", out);
-        c = cv::waitKey(30);
+        c = cv::waitKey(60);
         if (c == 'q')
             exit_key_pressed = true;
         if (c== '.') 
@@ -164,7 +167,7 @@ int main (int argc , char* argv[])
 
     while(nh.ok())
     {   
-        tracker.setDepthFrame(depth_frame);
+        //tracker.setDepthFrame(depth_frame);
         cv::Point2f a1 = tracker.findMarker();
         std::cout << "Coordinate 1 center marker X: " << a1.x << " Y: "<< a1.y << std::endl;
         cv::Point3f b1 = tracker.findCoord3D(a1);

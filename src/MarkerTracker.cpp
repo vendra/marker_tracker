@@ -17,7 +17,7 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
 
     // Subscribe to input video feed and publish output video feed
     image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
-    //depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
+    depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     //info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
     //ros::Subscriber depth_sub_tmp = nh_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
     //ros::Subscriber ir_sub_tmp = nh_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
@@ -234,7 +234,7 @@ void MarkerTracker::getDepthFrame(cv::Mat &depth)
         depth = depth_frame_;
 }
 
-void MarkerTracker::setDepthFrame(const cv::Mat &depth)
+void MarkerTracker::setDepthFrame(const cv::Mat &depth) //remove
 {
     depth_frame_ = depth;
 }
@@ -259,7 +259,7 @@ void MarkerTracker::getOutputFrame(cv::Mat &out)
             for( int x = 0; x < im.cols; x++ )
                 for( int c = 0; c < 3; c++ )
                     im.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( im.at<uchar>(y,x)) );
-*/
+         */
         cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
 
         for (int i = 0; i < keypoints_.size(); ++i)
