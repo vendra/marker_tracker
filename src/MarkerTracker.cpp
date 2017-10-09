@@ -173,37 +173,27 @@ cv::Point2f MarkerTracker::findMarker()
     //if (keypoints_.size() != 0)
     //    std::cout << "Number of keypoints_: " << keypoints_.size() << std::endl;
 
-    cv::Point2f p;
-    for(int i = 0; i < keypoints_.size(); ++i)
-        p = keypoints_[i].pt;
+    cv::Point2f p(-1.0, -1.0);
+    
+    p = keypoints_[keypoints_.size()-1].pt;
 
 
-    // Ritorna l ultimo keypoint, solitamente però è uno.
-    // Aggiungere dei controlli qui
-    // Sto ritornando effettivamente il centro del blob? (SI)
-    return p;
-
+    if (keypoints_.size() == 1)
+        return p;
 }
 
 // Exploit pinhole camera model to compute X and Y, find Z in depth map
 cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 {
 
-    //std::cout << "pre uZ\n";
     // in (u,v) trovo valore di Z corrispondente
     unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y);
     Z = static_cast<float>(uZ)/1000;
-
-    //if (Z != 0)
-    // std::cout << "Z: " << Z << std::endl;
-
-    //std::cout << "preCompute XY\n";
+    
     // compute X e Y
-    X = (point.x - c_x) * Z / f_x;
-    Y = (point.y - c_y) * Z / f_y;
-    //std::cout << "XY computer\n";
+    X = (point.x - cameraMatrix.at<double>(0,2)) * Z / cameraMatrix.at<double>(0,0);
+    Y = (point.y - cameraMatrix.at<double>(1,2)) * Z / cameraMatrix.at<double>(1,1);
 
-    // ritorno point3f (XYZ)
     return cv::Point3f(X,Y,Z);
 
 }

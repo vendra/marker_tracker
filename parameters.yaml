@@ -1,6 +1,6 @@
 %YAML:1.0
 minDistBetweenBlobs: 5.0
-minThreshold: 180
+minThreshold: 80
 maxThreshold: 255
 thresholdStep: 10
 filterByInertia: 0

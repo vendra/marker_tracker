@@ -169,7 +169,7 @@ int main (int argc , char* argv[])
     {   
         //tracker.setDepthFrame(depth_frame);
         cv::Point2f a1 = tracker.findMarker();
-        std::cout << "Coordinate 1 center marker X: " << a1.x << " Y: "<< a1.y << std::endl;
+
         cv::Point3f b1 = tracker.findCoord3D(a1);
         //std::cout << "---------------------------------------------------------------" << std::endl;
 
@@ -178,8 +178,11 @@ int main (int argc , char* argv[])
         imshow(id+"Output",out);
         cv::waitKey(30);
 
-        std::cout << "Coordinate 3D X: " << b1.x << " Y: " << b1.y << " Z: " << b1.z << std::endl;
-
+        if(a1.x!=0 && a1.y!=0) 
+        {
+            //std::cout << "Coordinate 2D X:" << a1.x << " Y: " << a1.y << std::endl;
+            std::cout << "Coordinate 3D X:" << b1.x << " Y: " << b1.y << " Z: " << b1.z << std::endl;
+        }
         //Let the node run until it finishes
         ros::spinOnce();
         c = cv::waitKey(30);
