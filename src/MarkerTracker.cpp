@@ -150,7 +150,7 @@ cv::Point2f MarkerTracker::findMarker()
     if(keypoints_.size() > 0)
         p = keypoints_[keypoints_.size()-1].pt;
 
-    return p;
+     return p;
 }
 
 // Exploit pinhole camera model to compute X and Y, find Z in depth map
