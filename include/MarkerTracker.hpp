@@ -23,12 +23,9 @@ private:
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     image_transport::Subscriber depth_sub_;
-    //image_transport::Publisher image_pub_;
-    //ros::Subscriber info_sub_;
+
     cv::Mat frame_, depth_frame_, im_with_keypoints_;
     cv::Mat cameraMatrix, distCoeffs;
-    cv::Mat D,K,R,P;
-    float f_x, f_y, c_x, c_y;
     float X,Y,Z;
     bool camera_info_flag_;
     std::vector<cv::KeyPoint> keypoints_;
@@ -37,7 +34,7 @@ private:
     cv::Ptr<cv::SimpleBlobDetector> detector;
     std::vector<cv::Point2f> maskPoints;
 
-
+    void applyMask(); //private
 
 public:
     MarkerTracker(std::string image_path, std::string depth_path,
@@ -53,11 +50,7 @@ public:
 
     void depthCb(const sensor_msgs::ImageConstPtr& msg); //useless now
 
-    void cameraInfoCb(const sensor_msgs::CameraInfoConstPtr& msg);
-
-    void setMask(const std::vector<cv::Point2f> mask);
-
-    void applyMask(); //private
+    void setMask(const std::vector<cv::Point2f> mask);    
 
     // Segment the IR image and find (u,v) coordinates of the marker
     cv::Point2f findMarker();

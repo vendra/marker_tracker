@@ -13,22 +13,9 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
                              std::string param_path, std::string calib_path)
     : it_(nh_)
 {
-    // Counting object with static variable, such that every camera has its image displayed in correct window
-
-    // Subscribe to input video feed and publish output video feed
+    // Subscribe to input video feed
     image_sub_ = it_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
     depth_sub_ = it_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
-    //info_sub_ = nh_.subscribe("/kinect2_head/depth/camera_info", 5, &MarkerTracker::cameraInfoCb, this);
-    //ros::Subscriber depth_sub_tmp = nh_.subscribe(depth_path, 5, &MarkerTracker::depthCb, this);
-    //ros::Subscriber ir_sub_tmp = nh_.subscribe(image_path, 5, &MarkerTracker::imageCb, this);
-
-    //camera_info_flag_ = false;
-
-    // Initializes intrinsic params 
-    f_x = 0.0; // not used anymore? Use cv::Mat cameraMatrix instead
-    f_y = 0.0;
-    c_x = 0.0;
-    c_y = 0.0;
 
     //3D point
     X = 0.0;
@@ -48,7 +35,7 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
     detector = cv::SimpleBlobDetector::create(params);
 }
 
-bool MarkerTracker::readInputParams(std::string path) //make private
+bool MarkerTracker::readInputParams(std::string path)
 {
 
     std::cout << "Reading blob parameters from input file.. \n";
@@ -94,7 +81,7 @@ bool MarkerTracker::readCameraParams(std::string path) //make private
     }
 
     fs["cameraMatrix"] >> cameraMatrix;
-    fs["distCoeffs"]   >> distCoeffs;
+    fs["distortionCoefficients"]   >> distCoeffs;
 
     std::cout << "Camera calibration parameters OK!" << std::endl;
     std::cout << "camera matrix: " << cameraMatrix << std::endl;
@@ -153,11 +140,8 @@ cv::Point2f MarkerTracker::findMarker()
 {
     applyMask();
 
-    cv::Mat img_black;
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8UC1, 1.0/256);
-
-    //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
     detector->detect(img_source, keypoints_);
 
@@ -166,9 +150,7 @@ cv::Point2f MarkerTracker::findMarker()
     if(keypoints_.size() > 0)
         p = keypoints_[keypoints_.size()-1].pt;
 
-
-    if (keypoints_.size() == 1)
-        return p;
+    return p;
 }
 
 // Exploit pinhole camera model to compute X and Y, find Z in depth map

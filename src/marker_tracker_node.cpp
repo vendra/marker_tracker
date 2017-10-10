@@ -72,6 +72,8 @@ int main (int argc , char* argv[])
     nh.getParam("id", id); 
     //std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
 
+    ros::Publisher position_pub = nh.advertise<geometry_msgs::Point>(id+"_pos", 10);
+
     //For now all nodes uses the same YAML but its easy to replace using files with
     //id.yaml and reading those instead 
     std::string param_path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
@@ -146,6 +148,8 @@ int main (int argc , char* argv[])
     cv::createTrackbar("Brightness", id+"Setup", &bri_slider, 100);
     cv::waitKey(30);
 
+    geometry_msgs::Point msg;
+
     while(nh.ok())
     {   
         //tracker.setDepthFrame(depth_frame);
@@ -165,12 +169,18 @@ int main (int argc , char* argv[])
         imshow(id+"Output",out);
         cv::waitKey(30);
 
-        if(imagePoint.x!=0 && imagePoint.y!=0) 
+        if(imagePoint.x!=0 && imagePoint.y!=0 && spacePoint.z!=0) 
         {
             //std::cout << "Coordinate 2D X:" << imagePoint.x << " Y: " << imagePoint.y << std::endl;
             std::cout << "Coordinate 3D X:" << spacePoint.x << " Y: " << spacePoint.y << " Z: " << spacePoint.z << std::endl;
         }
+
+        msg.x = spacePoint.x;
+        msg.y = spacePoint.y;
+        msg.z = spacePoint.z;
         
+        position_pub.publish(msg);    
+
         ros::spinOnce();
         c = cv::waitKey(30);
         if (c == 'q')
