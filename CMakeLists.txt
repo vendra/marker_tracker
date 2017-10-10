@@ -51,3 +51,10 @@ target_link_libraries(marker_tracker_node MarkerTracker
 	${OpenCV_LIBRARIES}
 )
 
+add_executable(master_node src/master_node.cpp)
+target_link_libraries(master_node 
+	${PROJECT_NAME}
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
+)
+
