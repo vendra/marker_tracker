@@ -152,30 +152,19 @@ void MarkerTracker::applyMask()
 cv::Point2f MarkerTracker::findMarker()
 {
     applyMask();
+
     cv::Mat img_black;
     cv::Mat img_source = frame_;
     img_source.convertTo(img_source, CV_8UC1, 1.0/256);
-    
+
     //cv::threshold(img_source, img_source, 150, 255, cv::THRESH_BINARY);
 
     detector->detect(img_source, keypoints_);
 
-    //Debug
-    /*
-    for (int i = 0; i < img_source.rows; ++i)
-        for (int j = 0; j < img_source.cols; ++j)
-        {
-            if (img_source.at<uchar>(i,j) > 250)
-                std::cout << "Found pixel >250 intensity: " << std::endl;
-        }
-    */
-
-    //if (keypoints_.size() != 0)
-    //    std::cout << "Number of keypoints_: " << keypoints_.size() << std::endl;
-
     cv::Point2f p(-1.0, -1.0);
     
-    p = keypoints_[keypoints_.size()-1].pt;
+    if(keypoints_.size() > 0)
+        p = keypoints_[keypoints_.size()-1].pt;
 
 
     if (keypoints_.size() == 1)

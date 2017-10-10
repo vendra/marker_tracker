@@ -34,28 +34,6 @@
 cv::Mat depth_frame;
 cv_bridge::CvImagePtr cv_ptr;
 
-void depthCb(const sensor_msgs::ImageConstPtr&  msg)
-{
-    try
-    {
-        //Decode
-		cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
-		depth_frame = cv_ptr->image;
-        //cv::imshow("view", cv_bridge::toCvShare(msg, "16UC1")->image);
-		//cv::waitKey(30);
-		//REPUBLISH
-		//sensor_msgs::ImagePtr msg_to_send = cv_bridge::CvImage(std_msgs::Header(), "16UC1", cv_ptr->image).toImageMsg();
-		//depth_pub.publish(msg_to_send);
-		
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
-
-}
-
 void mouseClick(int event, int x, int y, int flags, void* maskPoints)
 {
      if  ( event == cv::EVENT_LBUTTONDOWN )
@@ -86,7 +64,7 @@ void mouseClick(int event, int x, int y, int flags, void* maskPoints)
 
 int main (int argc , char* argv[])
 {
-    ros::init(argc, argv, "Marker_tracker_node"); // Node name. In ROS graph (e.g rqt_graph): /class_template
+    ros::init(argc, argv, "Marker_tracker_node"); 
     ros::NodeHandle nh("~");
     
     //Read ID
@@ -118,10 +96,11 @@ int main (int argc , char* argv[])
     int bri_slider = 0;
     cv::startWindowThread();
     cv::namedWindow(id+"Setup");
-    cv::waitKey(30);
     cv::setMouseCallback(id+"Setup", mouseClick, &maskPoints);
     cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
     cv::createTrackbar("Brightness", id+"Setup", &bri_slider, 100);
+    cv::waitKey(30);
+
     ROS_INFO("Press q to confirm and proceed");
     
     char c;
@@ -163,27 +142,35 @@ int main (int argc , char* argv[])
     ROS_INFO("Setup Completed");
 
     // Create new Window
-    cv::namedWindow(id+"Output");
+    cv::namedWindow(id+"Output");cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
+    cv::createTrackbar("Brightness", id+"Setup", &bri_slider, 100);
+    cv::waitKey(30);
 
     while(nh.ok())
     {   
         //tracker.setDepthFrame(depth_frame);
-        cv::Point2f a1 = tracker.findMarker();
-
-        cv::Point3f b1 = tracker.findCoord3D(a1);
-        //std::cout << "---------------------------------------------------------------" << std::endl;
-
-        // let the user see
+        cv::Point2f imagePoint = tracker.findMarker();
+        cv::Point3f spacePoint = tracker.findCoord3D(imagePoint);
         tracker.getOutputFrame(out);
+
+        //Apply brightness-contrast
+        if (!out.empty())
+        {
+            for( int y = 0; y < out.rows; y++)
+                for( int x = 0; x < out.cols; x++)
+                 for(int c = 0; c < 3; c++)
+                     out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
+        }
+        
         imshow(id+"Output",out);
         cv::waitKey(30);
 
-        if(a1.x!=0 && a1.y!=0) 
+        if(imagePoint.x!=0 && imagePoint.y!=0) 
         {
-            //std::cout << "Coordinate 2D X:" << a1.x << " Y: " << a1.y << std::endl;
-            std::cout << "Coordinate 3D X:" << b1.x << " Y: " << b1.y << " Z: " << b1.z << std::endl;
+            //std::cout << "Coordinate 2D X:" << imagePoint.x << " Y: " << imagePoint.y << std::endl;
+            std::cout << "Coordinate 3D X:" << spacePoint.x << " Y: " << spacePoint.y << " Z: " << spacePoint.z << std::endl;
         }
-        //Let the node run until it finishes
+        
         ros::spinOnce();
         c = cv::waitKey(30);
         if (c == 'q')
