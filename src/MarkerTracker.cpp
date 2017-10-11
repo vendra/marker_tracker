@@ -195,11 +195,6 @@ void MarkerTracker::getDepthFrame(cv::Mat &depth)
         depth = depth_frame_;
 }
 
-void MarkerTracker::setDepthFrame(const cv::Mat &depth) //remove
-{
-    depth_frame_ = depth;
-}
-
 void MarkerTracker::getOutputFrame(cv::Mat &out)
 {
     if (frame_.empty())

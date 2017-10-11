@@ -65,8 +65,6 @@ public:
 
     void getDepthFrame(cv::Mat& depth);
 
-    void setDepthFrame(const cv::Mat& depth);
-
     void getOutputFrame(cv::Mat& out);
 
 };

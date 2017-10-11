@@ -155,7 +155,6 @@ int main (int argc , char* argv[])
 
     while(nh.ok())
     {   
-        //tracker.setDepthFrame(depth_frame);
         cv::Point2f imagePoint = tracker.findMarker();
         cv::Point3f spacePoint = tracker.findCoord3D(imagePoint);
         tracker.getOutputFrame(out);
