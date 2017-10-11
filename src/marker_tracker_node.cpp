@@ -72,7 +72,7 @@ int main (int argc , char* argv[])
     nh.getParam("id", id); 
     //std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
 
-    ros::Publisher position_pub = nh.advertise<geometry_msgs::Point>(id+"_pos", 10);
+    ros::Publisher position_pub = nh.advertise<geometry_msgs::PointStamped>("position", 10);
 
     //For now all nodes uses the same YAML but its easy to replace using files with
     //id.yaml and reading those instead 
@@ -148,7 +148,7 @@ int main (int argc , char* argv[])
     cv::createTrackbar("Brightness", id+"Setup", &bri_slider, 100);
     cv::waitKey(30);
 
-    geometry_msgs::Point msg;
+    geometry_msgs::PointStamped msg;
 
     while(nh.ok())
     {   
@@ -175,9 +175,9 @@ int main (int argc , char* argv[])
             std::cout << "Coordinate 3D X:" << spacePoint.x << " Y: " << spacePoint.y << " Z: " << spacePoint.z << std::endl;
         }
 
-        msg.x = spacePoint.x;
-        msg.y = spacePoint.y;
-        msg.z = spacePoint.z;
+        msg.point.x = spacePoint.x;
+        msg.point.y = spacePoint.y;
+        msg.point.z = spacePoint.z;
         
         position_pub.publish(msg);    
 
