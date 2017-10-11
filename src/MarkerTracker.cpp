@@ -2,8 +2,6 @@
  *
  *  MarkerTracker.cpp
  *
- *
- *
  */
 
 #include <MarkerTracker.hpp>
@@ -156,17 +154,31 @@ cv::Point2f MarkerTracker::findMarker()
 // Exploit pinhole camera model to compute X and Y, find Z in depth map
 cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 {
-
-    // in (u,v) trovo valore di Z corrispondente
-    unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y);
-    Z = static_cast<float>(uZ)/1000;
+    std::vector<float> depthValues;
     
-    // compute X e Y
+    //Check bounds and select neighbors +-1 in X and Y axis to compute median
+    if (point.x > 0 && point.x < frame_.cols && point.y > 0 && point.y < frame_.rows)
+    {
+        depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x, point.y))/1000);
+        depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x+1, point.y))/1000);
+        depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x, point.y+1))/1000);
+        depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x-1, point.y))/1000);
+        depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x, point.y-1))/1000);
+    } else {
+        return cv::Point3f(0, 0, 0);
+    }
+
+    std::sort (depthValues.begin(), depthValues.end()); 
+    Z = depthValues[2]; //Median, new way
+    
+    //unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y); // old way
+    //Z = static_cast<float>(uZ)/1000; //Old way to get Z
+    
+    // compute X e Y by backprojection
     X = (point.x - cameraMatrix.at<double>(0,2)) * Z / cameraMatrix.at<double>(0,0);
     Y = (point.y - cameraMatrix.at<double>(1,2)) * Z / cameraMatrix.at<double>(1,1);
 
     return cv::Point3f(X,Y,Z);
-
 }
 
 bool MarkerTracker::hasIR()
