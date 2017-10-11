@@ -32,6 +32,7 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <tf/transform_listener.h>
 
 void positionCb(const geometry_msgs::PointStampedConstPtr pos1, 
                 const geometry_msgs::PointStampedConstPtr pos2,
@@ -59,7 +60,24 @@ int main (int argc , char* argv[])
 
 
     //Lookup transform from kx to master k1 for example
+    tf::TransformListener listener;
+    tf::StampedTransform k2transf;
+    tf::StampedTransform k3transf;
+
+    while(nh.ok()) {
+        try {
+            listener.lookupTransform("/k1_ir_frame", "k2_ir_frame", ros::Time(0), k2transf);
+            } catch (tf::TransformException &ex) {
+                ROS_ERROR("%s",ex.what());
+                ros::Duration(1.0).sleep();
+                continue;
+            }
+            std::cout << "Transform OK!" << std::endl;
+            break;
+    }   
     //Apply transform
+
+
     //Do interpolation of some kind / median
 
     ros::spin();

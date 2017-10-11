@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
 	image_transport
 	cv_bridge
 	camera_info_manager
+        tf
 )
 
 find_package(OpenCV REQUIRED)
