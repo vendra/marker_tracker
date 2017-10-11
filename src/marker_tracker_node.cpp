@@ -73,6 +73,10 @@ int main (int argc , char* argv[])
     //std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
 
     ros::Publisher position_pub = nh.advertise<geometry_msgs::PointStamped>("position", 10);
+    geometry_msgs::PointStamped msg;
+    msg.point.x = 0;
+    msg.point.y = 0;
+    msg.point.z = 0;
 
     //For now all nodes uses the same YAML but its easy to replace using files with
     //id.yaml and reading those instead 
@@ -83,9 +87,7 @@ int main (int argc , char* argv[])
 
     MarkerTracker tracker("/"+id+"/ir/image", "/"+id+"/depth/image",
                           param_path, calib_path);
-    
-    //ros::Subscriber sub = nh.subscribe("/"+id+"/depth/image", 100, depthCb);
-    
+        
     // wait for images to be published
     ros::spinOnce();
     ros::Duration(2.0).sleep();
@@ -116,6 +118,9 @@ int main (int argc , char* argv[])
         tracker.findMarker();
         tracker.getOutputFrame(out);
         
+        //Workaround to make synch work, master needs to start after all topics are already publishing
+        position_pub.publish(msg);
+
         //Brightness setup visulization
         if (!out.empty())
         {
@@ -130,7 +135,7 @@ int main (int argc , char* argv[])
             cv::circle(out, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
 
         cv::imshow(id+"Setup", out);
-        c = cv::waitKey(60);
+        c = cv::waitKey(30);
         if (c == 'q')
             exit_key_pressed = true;
         if (c== '.') 
@@ -147,8 +152,6 @@ int main (int argc , char* argv[])
     cv::namedWindow(id+"Output");cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
     cv::createTrackbar("Brightness", id+"Setup", &bri_slider, 100);
     cv::waitKey(30);
-
-    geometry_msgs::PointStamped msg;
 
     while(nh.ok())
     {   
