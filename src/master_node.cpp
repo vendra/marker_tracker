@@ -75,6 +75,8 @@ int main (int argc , char* argv[])
             std::cout << "Transform OK!" << std::endl;
             break;
     }   
+
+    std::cout << "Out" << std::endl;
     //Apply transform
 
 
