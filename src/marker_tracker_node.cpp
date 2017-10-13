@@ -30,6 +30,8 @@
 #include <marker_tracker_node.hpp>
 #include <MarkerTracker.hpp>
 #include <ros/console.h>
+#include <tf/transform_listener.h>
+#include <eigen3/Eigen/Eigen>
 
 cv::Mat depth_frame;
 cv_bridge::CvImagePtr cv_ptr;
@@ -155,9 +157,11 @@ int main (int argc , char* argv[])
 
     while(nh.ok())
     {   
+        cv::Mat depth;
         cv::Point2f imagePoint = tracker.findMarker();
         cv::Point3f spacePoint = tracker.findCoord3D(imagePoint);
         tracker.getOutputFrame(out);
+        tracker.getDepthFrame(depth);
 
         //Apply brightness-contrast
         if (!out.empty())
@@ -167,7 +171,19 @@ int main (int argc , char* argv[])
                  for(int c = 0; c < 3; c++)
                      out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
         }
+
+        //Check bounds and select neighbors +-1 in X and Y axis to compute median
+        if (imagePoint.x > 0 && imagePoint.x < out.cols && imagePoint.y > 0 && imagePoint.y < out.rows)
+        {
+            cv::circle(out,cv::Point(imagePoint.x,imagePoint.y),1, cv::Scalar(255,0,0));
+            cv::circle(out,cv::Point(imagePoint.x+1,imagePoint.y), 1, cv::Scalar(255,0,0));
+            cv::circle(out,cv::Point(imagePoint.x,imagePoint.y+1), 1, cv::Scalar(255,0,0));
+            cv::circle(out,cv::Point(imagePoint.x-1,imagePoint.y), 1, cv::Scalar(255,0,0));
+            cv::circle(out,cv::Point(imagePoint.x,imagePoint.y-1), 1, cv::Scalar(255,0,0));
+        }
         
+        imshow("test", depth);
+
         imshow(id+"Output",out);
         cv::waitKey(30);
 
@@ -177,9 +193,30 @@ int main (int argc , char* argv[])
             std::cout << "Coordinate 3D X:" << spacePoint.x << " Y: " << spacePoint.y << " Z: " << spacePoint.z << std::endl;
         }
 
+//        tf::TransformListener listener;
+//        tf::StampedTransform transform;
+//        try {
+//            listener.waitForTransform("world", id,
+//                                      ros::Time(0), ros::Duration(1));
+//            listener.lookupTransform("world", id, ros::Time(0), transform);
+//            } catch (tf::TransformException &ex) {
+//                ROS_ERROR("%s",ex.what());
+//                ros::Duration(1.0).sleep();
+//                continue;
+//            }
+        
+        
+//        tf::Vector3 pp(spacePoint.x, spacePoint.y, spacePoint.z);
+//        tf::Vector3 p = transform * pp;
+
+//        msg.point.x = p.getX();
+//        msg.point.y = p.getY();
+//        msg.point.z = p.getZ();
         msg.point.x = spacePoint.x;
         msg.point.y = spacePoint.y;
         msg.point.z = spacePoint.z;
+        //msg.header.frame_id = "world";
+        msg.header.frame_id = id;
         
         position_pub.publish(msg);    
 

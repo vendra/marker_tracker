@@ -167,6 +167,11 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
     } else {
         return cv::Point3f(0, 0, 0);
     }
+    std::cout << "DepthValues: ";
+    for(int i=0; i<depthValues.size(); i++) {
+        std::cout << " " << depthValues[i] << " ";
+    }
+    std::cout << std::endl;
 
     std::sort (depthValues.begin(), depthValues.end()); 
     Z = depthValues[2]; //Median, new way
@@ -203,8 +208,12 @@ void MarkerTracker::getDepthFrame(cv::Mat &depth)
 {
     if (depth_frame_.empty())
         ROS_INFO("Empty Depth Frame!");
-    else
+    else {
         depth = depth_frame_;
+        cv::cvtColor(depth, depth, cv::COLOR_GRAY2BGR);
+        for (int i = 0; i < keypoints_.size(); ++i)
+          cv::circle(depth, keypoints_[i].pt, 5, cv::Scalar(0,255,0), 2);
+    }
 }
 
 void MarkerTracker::getOutputFrame(cv::Mat &out)

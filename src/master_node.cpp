@@ -34,12 +34,42 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <tf/transform_listener.h>
 
+tf::StampedTransform k2transf;
+tf::StampedTransform k3transf;
+//tf::TransformListener listenerCb;
+
 void positionCb(const geometry_msgs::PointStampedConstPtr pos1, 
                 const geometry_msgs::PointStampedConstPtr pos2,
                 const geometry_msgs::PointStampedConstPtr pos3) 
 {
-    std::cout << "SEQS:: " << pos1->header.seq << " " << pos2->header.seq <<
-    " " << pos3->header.seq << std::endl;
+    //std::cout << "SEQS:: " << pos1->header.seq << " " << pos2->header.seq <<
+    //" " << pos3->header.seq << std::endl;
+
+    tf::Vector3 point2, point3;
+    point2.setX(pos2->point.x);
+    point2.setY(pos2->point.y);
+    point2.setZ(pos2->point.z);
+
+    point3.setX(pos3->point.x);
+    point3.setY(pos3->point.y);
+    point3.setZ(pos3->point.z);
+
+    tf::Vector3 transfPoint2 = k2transf * point2;
+    tf::Vector3 transfPoint3 = k3transf * point3;
+
+
+    std::cout << "NORMAL tf" << std::endl;
+    std::cout << "X: " << pos1->point.x << " " << transfPoint2.getX() << 
+                 " " << transfPoint3.getX() << std::endl;
+    std::cout << "Y: " << pos1->point.y << " " << transfPoint2.getY() << 
+                 " " << transfPoint3.getY() << std::endl;
+    std::cout << "Z: " << pos1->point.z << " " << transfPoint2.getZ() << 
+                 " " << transfPoint3.getZ() << std::endl;
+    std::cout << std::endl;
+
+    //geometry_msgs::PointStamped out;
+    //listenerCb.transformPoint("/k1_ir_frame", *pos2, out);
+
 }
 
 int main (int argc , char* argv[])
@@ -61,25 +91,34 @@ int main (int argc , char* argv[])
 
     //Lookup transform from kx to master k1 for example
     tf::TransformListener listener;
-    tf::StampedTransform k2transf;
-    tf::StampedTransform k3transf;
 
     while(nh.ok()) {
         try {
-            listener.lookupTransform("/k1_ir_frame", "k2_ir_frame", ros::Time(0), k2transf);
+            listener.lookupTransform("k1", "k2",
+                                      ros::Time(0), k2transf);
             } catch (tf::TransformException &ex) {
                 ROS_ERROR("%s",ex.what());
                 ros::Duration(1.0).sleep();
                 continue;
             }
-            std::cout << "Transform OK!" << std::endl;
+            std::cout << "Transform K2 to K1 OK!" << std::endl;
+            break;
+    }
+
+    while(nh.ok()) {
+        try {
+            listener.lookupTransform("k1", "k3",
+                                      ros::Time(0), k3transf);
+            } catch (tf::TransformException &ex) {
+                ROS_ERROR("%s",ex.what());
+                ros::Duration(1.0).sleep();
+                continue;
+            }
+            std::cout << "Transform K3 to K1 OK!" << std::endl;
             break;
     }   
 
-    std::cout << "Out" << std::endl;
-    //Apply transform
-
-
+    std::cout << "K2 to K1: " << k2transf.getRotation() << std::endl;
     //Do interpolation of some kind / median
 
     ros::spin();
