@@ -10,7 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
 	cv_bridge
 	camera_info_manager
         tf
-        visp_ros
+
 )
 
 find_package(OpenCV REQUIRED)
@@ -26,7 +26,7 @@ catkin_package(
 	  image_transport
 	  cv_bridge
 	  camera_info_manager
-          visp_ros
+
 )
 
 add_custom_target(${PROJECT_NAME}_HEADERS

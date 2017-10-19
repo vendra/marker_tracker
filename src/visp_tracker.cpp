@@ -1,52 +1,65 @@
-#include <visp/vpDisplayX.h>
-#include <visp/vpImage.h>
-#include <visp_ros/vpROSGrabber.h>
+#include <ros/ros.h>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
-int main(int argc, const char** argv)
+#include <visp_bridge/image.h>
+
+static const std::string OPENCV_WINDOW = "Image window";
+
+
+
+class ImageConverter
 {
-  try {
-    bool opt_use_camera_info = false;
-    for (int i=0; i<argc; i++) {
-      if (std::string(argv[i]) == "--use-camera-info")
-        opt_use_camera_info = true;
-      else if (std::string(argv[i]) == "--help") {
-        std::cout << "Usage: " << argv[0]
-                  << " [--use-camera-info] [--help]"
-                  << std::endl;
-        return 0;
-      }
-    }
-    std::cout << "Use camera info: " << ((opt_use_camera_info == true) ? "yes" : "no") << std::endl;
+  ros::NodeHandle nh_;
+  image_transport::ImageTransport it_;
+  image_transport::Subscriber image_sub_;
+  image_transport::Publisher image_pub_;
 
-    //vpImage<unsigned char> I; // Create a gray level image container
-    vpImage<vpRGBa> I; // Create a color image container
-    vpROSGrabber g; // Create a grabber based on ROS
+public:
+  ImageConverter()
+    : it_(nh_)
+  {
+    // Subscrive to input video feed and publish output video feed
+    image_sub_ = it_.subscribe("/kinect2_head/ir/image", 1,
+                               &ImageConverter::imageCb, this);
 
-    g.setImageTopic("/kinect2_head/ir/image");
-    if (opt_use_camera_info) {
-      g.setCameraInfoTopic("/camera/camera_info");
-      g.setRectify(true);
-    }
-
-    g.open(I);
-    std::cout << "Image size: " << I.getWidth() << " " << I.getHeight() << std::endl;
-
-#ifdef VISP_HAVE_X11
-    vpDisplayX d(I);
-#else
-    std::cout << "No image viewer is available..." << std::endl;
-#endif
-
-    while(1) {
-      g.acquire(I);
-      vpDisplay::display(I);
-      vpDisplay::displayText(I, 20, 20, "A click to quit...", vpColor::red);
-      vpDisplay::flush(I);
-      if (vpDisplay::getClick(I, false))
-        break;
-    }
+    cv::namedWindow(OPENCV_WINDOW);
   }
-  catch(vpException e) {
-    std::cout << "Catch an exception: " << e << std::endl;
+
+  ~ImageConverter()
+  {
+    cv::destroyWindow(OPENCV_WINDOW);
   }
+
+
+  void imageCb(const sensor_msgs::ImageConstPtr& msg)
+  {
+    cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+    }
+
+    cv::Mat image = cv_ptr->image;
+
+
+//    vpImage<unsigned char> vImage = visp_bridge::toVispImage(frame);
+  }
+};
+
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "image_converter");
+  ImageConverter ic;
+  ros::spin();
+  return 0;
 }
