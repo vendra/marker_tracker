@@ -79,12 +79,12 @@ public:
     cv::Point2f detectMarker();
 
     //private
-    static void findMarkerContours( const cv::Mat& image, std::vector<std::vector<cv::Point>>& contours )
+    static void findMarkerContours( const cv::Mat& image, std::vector<std::vector<cv::Point>>& contours );
 
     //Backprojection of the 2D point, returns 3D point with respect to the camera frame
     cv::Point3f findCoord3D(cv::Point2f point);
 
-    void findMarkerDepth(const cv::KeyPoint markerKeypoint)
+    void findMarkerDepth(const cv::KeyPoint markerKeypoint);
 
     //Returns true if an IR frame has been published and read
     bool hasIR();
