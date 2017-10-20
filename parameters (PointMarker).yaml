@@ -1,6 +1,6 @@
 %YAML:1.0
 minDistBetweenBlobs: 5.0
-minThreshold: 150
+minThreshold: 80
 maxThreshold: 255
 thresholdStep: 10
 filterByInertia: 0
@@ -15,5 +15,5 @@ filterByCircularity: 0
 minCircularity: 0.0
 maxCircularity: 1.0
 filterByArea: 1
-minArea: 10.0
-maxArea: 2000.0
+minArea: 1.0
+maxArea: 50.0

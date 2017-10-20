@@ -13,6 +13,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/features2d/features2d.hpp>
 
+#include <math.h>
+
 
 class MarkerTracker
 {
@@ -31,7 +33,23 @@ private:
     cv::Ptr<cv::SimpleBlobDetector> detector;
     std::vector<cv::Point2f> maskPoints;
 
+    cv::Mat blobImage;
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::KeyPoint> keypoints; // also have keypoints_ use only one
+    std::vector<double> depthValues;
+    std::vector<double> refinedValues;
+    double radius, medianDepth;
+    int centerX, centerY;
+
+    //Private Functions
+
     void applyMask(); 
+
+    void findDepthValues();
+
+    void findMedianDepth();
+
+    void refineMedianDepth();
 
 public:
     MarkerTracker(std::string image_path, std::string depth_path,
@@ -52,12 +70,21 @@ public:
     //Set the mask for the IR frame to avoid detecting false positive, i.e. ir reflection, other cameras
     void setMask(const std::vector<cv::Point2f> mask);    
 
-    //Detection of the IR marker in the image
+    //Detection of the IR POINT marker in the image
     //Returns a point (u,v) containing coordinates of the marker
     cv::Point2f findMarker();
 
+    //Detection of the IR CUBIC marker in the image
+    //Returns a point (u,v) containing coordinates of the marker
+    cv::Point2f detectMarker();
+
+    //private
+    static void findMarkerContours( const cv::Mat& image, std::vector<std::vector<cv::Point>>& contours )
+
     //Backprojection of the 2D point, returns 3D point with respect to the camera frame
     cv::Point3f findCoord3D(cv::Point2f point);
+
+    void findMarkerDepth(const cv::KeyPoint markerKeypoint)
 
     //Returns true if an IR frame has been published and read
     bool hasIR();
