@@ -210,11 +210,13 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
   } else {
     return cv::Point3f(0, 0, 0);
   }
+  /*
   std::cout << "DepthValues: ";
   for(int i=0; i<depthValues.size(); i++) {
     std::cout << " " << depthValues[i] << " ";
   }
   std::cout << std::endl;
+  */
 
   std::sort (depthValues.begin(), depthValues.end());
   Z = depthValues[2]; //Median, new way
@@ -280,7 +282,7 @@ void MarkerTracker::findMedianDepth()
     else
       medianDepth = depthValues[floor(depthValues.size()/2)];
 
-    std::cout << "minValue: " << depthValues[0] << " avgValue: " << medianDepth << " maxValue: " << depthValues[depthValues.size()-1] << std::endl;
+    //std::cout << "minValue: " << depthValues[0] << " avgValue: " << medianDepth << " maxValue: " << depthValues[depthValues.size()-1] << std::endl;
   }
 }
 
@@ -304,7 +306,7 @@ void MarkerTracker::refineMedianDepth()
       else
         medianDepth = refinedValues[floor(refinedValues.size()/2)];
 
-      std::cout << "REFINED minValue: " << refinedValues[0] << " avgValue: " << medianDepth << " maxValue: " << refinedValues[refinedValues.size()-1] << std::endl;
+      //std::cout << "REFINED minValue: " << refinedValues[0] << " avgValue: " << medianDepth << " maxValue: " << refinedValues[refinedValues.size()-1] << std::endl;
 
     }
   }

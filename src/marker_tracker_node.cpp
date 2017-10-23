@@ -33,7 +33,7 @@
 #include <tf/transform_listener.h>
 
 
-//#define SETUP
+#define SETUP
 
 cv::Mat depth_frame;
 cv_bridge::CvImagePtr cv_ptr;
