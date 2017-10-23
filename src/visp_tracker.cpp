@@ -5,7 +5,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include <visp_bridge/image.h>
 
 static const std::string OPENCV_WINDOW = "Image window";
 
