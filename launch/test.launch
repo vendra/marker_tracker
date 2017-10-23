@@ -1,0 +1,7 @@
+<launch>
+        <node pkg="marker_tracker" name="detector_01" type="marker_tracker_node" args="kinect_01" output="screen" />
+        <node pkg="marker_tracker" name="detector_02" type="marker_tracker_node" args="kinect_02" output="screen" />
+        <node pkg="marker_tracker" name="detector_03" type="marker_tracker_node" args="kinect_03" output="screen" />
+        <node pkg="marker_tracker" name="detector_04" type="marker_tracker_node" args="kinect_04" output="screen" />
+        
+</launch>
