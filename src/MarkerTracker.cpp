@@ -172,12 +172,10 @@ cv::KeyPoint MarkerTracker::detectMarker()
 
   //----------------BLOB DETECTOR-------->
 
-  //BlobDetector parameters should be already be parsed and loaded
-
   //Detection BLOB
   detector->detect(blobImage, keypoints);
-
-  //cv::KeyPoint p(-1.0, -1.0); // If no detection -1,-1 or something better like NaN?
+  //cv::imshow("Blob", blobImage);
+  //cv::waitKey(30);
 
   if(keypoints.size() > 0)
     return keypoints[0];
@@ -186,7 +184,7 @@ cv::KeyPoint MarkerTracker::detectMarker()
 }
 
 //private
-static void MarkerTracker::findMarkerContours( const cv::Mat& image, std::vector<std::vector<cv::Point>>& contours )
+void MarkerTracker::findMarkerContours( const cv::Mat& image, std::vector<std::vector<cv::Point>>& contours )
 {
   contours.clear();
   cv::threshold(image, image, 150, 255, cv::THRESH_BINARY);
@@ -235,34 +233,11 @@ cv::Point3f MarkerTracker::findCoord3D(cv::KeyPoint point)
 {
   depthValues.resize(0);
 
-  findMarkerDepth();
-
-  //Check bounds and select neighbors +-1 in X and Y axis to compute median
-  if (point.x > 0 && point.x < frame_.cols && point.y > 0 && point.y < frame_.rows)
-  {
-    depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x, point.y))/1000);
-    depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x+1, point.y))/1000);
-    depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x, point.y+1))/1000);
-    depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x-1, point.y))/1000);
-    depthValues.push_back(static_cast<float>(depth_frame_.at<unsigned short>(point.x, point.y-1))/1000);
-  } else {
-    return cv::Point3f(0, 0, 0);
-  }
-  std::cout << "DepthValues: ";
-  for(int i=0; i<depthValues.size(); i++) {
-    std::cout << " " << depthValues[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::sort (depthValues.begin(), depthValues.end());
-  Z = depthValues[2]; //Median, new way
-
-  //unsigned short uZ = depth_frame_.at<unsigned short>(point.x,point.y); // old way
-  //Z = static_cast<float>(uZ)/1000; //Old way to get Z
-
-  // compute X e Y by backprojection
-  X = (point.x - cameraMatrix.at<double>(0,2)) * Z / cameraMatrix.at<double>(0,0);
-  Y = (point.y - cameraMatrix.at<double>(1,2)) * Z / cameraMatrix.at<double>(1,1);
+  findMarkerDepth(point);
+  Z = medianDepth;
+  // compute X,Y by backprojection
+  X = (point.pt.x - cameraMatrix.at<double>(0,2)) * Z / cameraMatrix.at<double>(0,0);
+  Y = (point.pt.y - cameraMatrix.at<double>(1,2)) * Z / cameraMatrix.at<double>(1,1);
 
   return cv::Point3f(X,Y,Z);
 }
@@ -270,7 +245,8 @@ cv::Point3f MarkerTracker::findCoord3D(cv::KeyPoint point)
 
 void MarkerTracker::findDepthValues()
 {
-  depthValues.resize(0); //resets precedent residual values
+  depthValues.resize(0); //resets precedent residual valuesù
+  depthPoints.resize(0);
 
   for(int i = centerX - radius; i < centerX + radius; ++i) {
     for(int j = centerY - radius; j < centerY + radius; ++j) {
@@ -278,10 +254,12 @@ void MarkerTracker::findDepthValues()
       if (frame_.at<uchar>(j,i) >= 245) {
         continue;
       } else if (pow(centerX - i, 2) + pow(centerY - j, 2) <= pow(radius/2,1.5)) {
-        double depthTemp = static_cast<double>(depth_.at<unsigned short>(j,i)) / 1000;
+        double depthTemp = static_cast<double>(depth_frame_.at<unsigned short>(j,i)) / 1000;
         if (depthTemp != 0) {
           depthValues.push_back(depthTemp);
-          cv::circle(image, cv::Point(i,j), 1, cv::Scalar(0, 255, 0));
+          depthPoints.push_back(cv::Point(i,j));
+          //cv::circle(frame_, cv::Point(i,j), 1, cv::Scalar(0, 255, 0));
+          //Should remove this cv::circle and add it to output function
         }
       }
     } // nested for
@@ -384,7 +362,6 @@ void MarkerTracker::getOutputFrame(cv::Mat &out)
   else
   {
     cv::Mat im;
-    //im = frame_;
     frame_.convertTo(im, CV_8UC1, 1.0/256);
 
     //cv::drawKeypoints( frame_, keypoints_, im_with_keypoints_, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT );
@@ -398,8 +375,12 @@ void MarkerTracker::getOutputFrame(cv::Mat &out)
          */
     cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
 
-    for (int i = 0; i < keypoints_.size(); ++i)
-      cv::circle(im, keypoints_[i].pt, 5, cv::Scalar(0,255,0), 2);
+    for(int i = 0; i < depthPoints.size(); ++i)
+      cv::circle(im, depthPoints[i], 1, cv::Scalar(0, 255, 0));
+
+//    for (int i = 0; i < keypoints_.size(); ++i)
+//      cv::circle(im, keypoints_[i].pt, 5, cv::Scalar(0,255,0), 2);
+    cv::drawKeypoints(im , keypoints, im, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
     out = im;
   }

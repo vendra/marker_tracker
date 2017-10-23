@@ -161,7 +161,8 @@ int main (int argc , char* argv[])
   while(nh.ok())
   {
     cv::Mat depth;
-    cv::Point2f imagePoint = tracker.findMarker();
+    //cv::Point2f imagePoint = tracker.findMarker();
+    cv::KeyPoint imagePoint = tracker.detectMarker();
     cv::Point3f spacePoint = tracker.findCoord3D(imagePoint);
     tracker.getOutputFrame(out);
     tracker.getDepthFrame(depth);
@@ -176,24 +177,24 @@ int main (int argc , char* argv[])
     }
 
     //Check bounds and select neighbors +-1 in X and Y axis to compute median
-    if (imagePoint.x > 0 && imagePoint.x < out.cols && imagePoint.y > 0 && imagePoint.y < out.rows)
-    {
-      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y),1, cv::Scalar(255,0,0));
-      cv::circle(out,cv::Point(imagePoint.x+1,imagePoint.y), 1, cv::Scalar(255,0,0));
-      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y+1), 1, cv::Scalar(255,0,0));
-      cv::circle(out,cv::Point(imagePoint.x-1,imagePoint.y), 1, cv::Scalar(255,0,0));
-      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y-1), 1, cv::Scalar(255,0,0));
-    }
+//    if (imagePoint.x > 0 && imagePoint.x < out.cols && imagePoint.y > 0 && imagePoint.y < out.rows)
+//    {
+//      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y),1, cv::Scalar(255,0,0));
+//      cv::circle(out,cv::Point(imagePoint.x+1,imagePoint.y), 1, cv::Scalar(255,0,0));
+//      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y+1), 1, cv::Scalar(255,0,0));
+//      cv::circle(out,cv::Point(imagePoint.x-1,imagePoint.y), 1, cv::Scalar(255,0,0));
+//      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y-1), 1, cv::Scalar(255,0,0));
+//    }
 
-    imshow("test", depth);
+    //imshow("test", depth);
 
     imshow(id+"Output",out);
     cv::waitKey(30);
 
-    if(imagePoint.x!=0 && imagePoint.y!=0 && spacePoint.z!=0)
+    if(imagePoint.pt.x!=0 && imagePoint.pt.y!=0 && spacePoint.z!=0)
     {
       //std::cout << "Coordinate 2D X:" << imagePoint.x << " Y: " << imagePoint.y << std::endl;
-      std::cout << "Coordinate 3D X:" << spacePoint.x << " Y: " << spacePoint.y << " Z: " << spacePoint.z << std::endl;
+      //std::cout << "Coordinate 3D X:" << spacePoint.x << " Y: " << spacePoint.y << " Z: " << spacePoint.z << std::endl;
     }
 
     //        tf::TransformListener listener;

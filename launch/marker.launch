@@ -1,18 +1,20 @@
 <launch>
         <param name="use_sim_time" value="true" />
-      	<node pkg="rosbag" type="play" name="player" args="--clock -l -s 10 /home/federico/multicamera_marker.bag" />        
+      	<node pkg="rosbag" type="play" name="player" args="--clock -l -s 5 /home/federico/multicamera_marker.bag" />        
 
-        <node pkg="image_transport" name="k1_ir" type="republish" args="compressed in:=/k1/ir/image raw out:=/k1/ir/image" />
-        <node pkg="image_transport" name="k1_depth" type="republish" args="compressedDepth in:=/k1/depth/image raw out:=/k1/depth/image" />
-        <node pkg="marker_tracker" name="k1" type="marker_tracker_node" args="k1" output="screen" />
+        <node pkg="image_transport" name="k1_depth" type="republish" args="compressedDepth in:=/kinect_01/depth/image raw out:=/kinect_01/depth/image" />
+        <node pkg="marker_tracker" name="detector_01" type="marker_tracker_node" args="kinect_01" output="screen" />
 
 
-        <node pkg="image_transport" name="k2_ir" type="republish" args="compressed in:=/k2/ir/image raw out:=/k2/ir/image" />
-        <node pkg="image_transport" name="k2_depth" type="republish" args="compressedDepth in:=/k2/depth/image raw out:=/k2/depth/image" />
-        <node pkg="marker_tracker" name="k2" type="marker_tracker_node" args="k2" output="screen" />
+        
+        <node pkg="image_transport" name="k2_depth" type="republish" args="compressedDepth in:=/kinect_02/depth/image raw out:=/kinect_02/depth/image" />
+        <node pkg="marker_tracker" name="detector_02" type="marker_tracker_node" args="kinect_02" output="screen" />
 
-        <node pkg="image_transport" name="k3_ir" type="republish" args="compressed in:=/k3/ir/image raw out:=/k3/ir/image" />
-        <node pkg="image_transport" name="k3_depth" type="republish" args="compressedDepth in:=/k3/depth/image raw out:=/k3/depth/image" />
-        <node pkg="marker_tracker" name="k3" type="marker_tracker_node" args="k3" output="screen" />
+       
+        <node pkg="image_transport" name="k3_depth" type="republish" args="compressedDepth in:=/kinect_03/depth/image raw out:=/kinect_03/depth/image" />
+        <node pkg="marker_tracker" name="detector_03" type="marker_tracker_node" args="kinect_03" output="screen" />
+
+        <node pkg="image_transport" name="k4_depth" type="republish" args="compressedDepth in:=/kinect_04/depth/image raw out:=/kinect_04/depth/image" />
+        <node pkg="marker_tracker" name="detector_04" type="marker_tracker_node" args="kinect_04" output="screen" />
         
 </launch>
