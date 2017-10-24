@@ -163,30 +163,40 @@ int main (int argc , char* argv[])
   //cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
   cv::waitKey(30);
 
+  cv::KeyPoint imagePoint;
+  cv::Point3f spacePoint;
+  cv::Mat depth;
+
   while(nh.ok())
   {
-    cv::Mat depth;
     //cv::Point2f imagePoint = tracker.findMarker(); //old marker
-    cv::KeyPoint imagePoint = tracker.detectMarker();
-    cv::Point3f spacePoint = tracker.findCoord3D(imagePoint);
-
-    tracker.getOutputFrame(out);
-    //tracker.getDepthFrame(depth); //Optional
-
-    //Apply brightness-contrast
-    if (enableView && !out.empty())
+    if(tracker.newFrameArrived())
     {
-      for( int y = 0; y < out.rows; y++)
-        for( int x = 0; x < out.cols; x++)
-          for(int c = 0; c < 3; c++)
-            out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
-    }
+      imagePoint = tracker.detectMarker();
+      spacePoint = tracker.findCoord3D(imagePoint);
 
-    msg.point.x = spacePoint.x;
-    msg.point.y = spacePoint.y;
-    msg.point.z = spacePoint.z;
-    msg.header.frame_id = id;
-    position_pub.publish(msg);
+      if(enableView)
+      {
+        tracker.getOutputFrame(out);
+        //tracker.getDepthFrame(depth); //Optional
+      }
+
+      //Apply brightness-contrast
+      if (enableView && !out.empty())
+      {
+        for( int y = 0; y < out.rows; y++)
+          for( int x = 0; x < out.cols; x++)
+            for(int c = 0; c < 3; c++)
+              out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
+      }
+
+      msg.point.x = spacePoint.x;
+      msg.point.y = spacePoint.y;
+      msg.point.z = spacePoint.z;
+      msg.header.frame_id = id;
+      position_pub.publish(msg);
+
+    } // If new frame arrived
 
     ros::spinOnce();
     if(enableView)

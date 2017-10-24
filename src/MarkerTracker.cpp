@@ -20,6 +20,8 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
   Y = 0.0;
   Z = 0.0;
 
+  newFrame = false;
+
   image_path_ = image_path;
   depth_path_ = depth_path;
 
@@ -87,6 +89,7 @@ bool MarkerTracker::readCameraParams(std::string path) //make private
 
 }
 
+bool MarkerTracker::newFrameArrived(){ return newFrame; }
 
 void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
@@ -101,6 +104,7 @@ void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
     return;
   }
   frame_ = cv_ptr->image;
+  newFrame = true;
 
 }
 
@@ -156,7 +160,7 @@ cv::Point2f MarkerTracker::findMarker()
 cv::KeyPoint MarkerTracker::detectMarker()
 {
   applyMask();
-
+  newFrame = false;
   cv::Mat img_source = frame_;
   img_source.convertTo(img_source, CV_8UC1, 1.0/256);
 

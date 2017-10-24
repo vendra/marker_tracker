@@ -41,6 +41,7 @@ private:
     std::vector<double> refinedValues;
     double radius, medianDepth;
     int centerX, centerY;
+    bool newFrame;
 
     //Private Functions
 
@@ -61,6 +62,8 @@ public:
 
     //Loads intrinsic camera parameters from .YAML specified as parameter
     bool readCameraParams(std::string path);
+
+    bool newFrameArrived();
 
     //Callback reading ir frame
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
