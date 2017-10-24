@@ -1,0 +1,20 @@
+<launch>
+        <param name="use_sim_time" value="true" />
+      	<node pkg="rosbag" type="play" name="player" args="--clock -l -s 5 /home/federico/cube_test.bag" />        
+
+        <node pkg="image_transport" name="k1_depth" type="republish" args="compressedDepth in:=/kinect_01/depth/image raw out:=/kinect_01/depth/image" />
+        <node pkg="marker_tracker" name="detector_01" type="marker_tracker_node" args="kinect_01 --noview" output="screen" />
+
+
+        
+        <node pkg="image_transport" name="k2_depth" type="republish" args="compressedDepth in:=/kinect_02/depth/image raw out:=/kinect_02/depth/image" />
+        <node pkg="marker_tracker" name="detector_02" type="marker_tracker_node" args="kinect_02 --noview" output="screen" />
+
+       
+        <node pkg="image_transport" name="k3_depth" type="republish" args="compressedDepth in:=/kinect_03/depth/image raw out:=/kinect_03/depth/image" />
+        <node pkg="marker_tracker" name="detector_03" type="marker_tracker_node" args="kinect_03 --noview" output="screen" />
+
+        <node pkg="image_transport" name="k4_depth" type="republish" args="compressedDepth in:=/kinect_04/depth/image raw out:=/kinect_04/depth/image" />
+        <node pkg="marker_tracker" name="detector_04" type="marker_tracker_node" args="kinect_04 --noview" output="screen" />
+        
+</launch>

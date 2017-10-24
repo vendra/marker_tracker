@@ -64,8 +64,6 @@ void mouseClick(int event, int x, int y, int flags, void* maskPoints)
   }
 }
 
-
-
 int main (int argc , char* argv[])
 {
   ros::init(argc, argv, "Marker_tracker_node");
@@ -73,9 +71,15 @@ int main (int argc , char* argv[])
 
   //Read ID
   std::string id = argv[1];
-  nh.getParam("id", id);
-  //std::cout << "ID read: " << argv[1] << std::endl; //Need to to some more controls here
+  //nh.getParam("id", id);
 
+  bool enableView = true;
+  if(argc == 3)
+  {
+    std::string view = argv[2];
+    if(view == "--noview")
+      enableView = false;
+  }
   ros::Publisher position_pub = nh.advertise<geometry_msgs::PointStamped>("position", 10);
   geometry_msgs::PointStamped msg;
   msg.point.x = 0;
@@ -154,21 +158,23 @@ int main (int argc , char* argv[])
   ROS_INFO("Setup Completed");
 
   // Create new Window
-  cv::namedWindow(id+"Output");cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
-  cv::createTrackbar("Brightness", id+"Setup", &bri_slider, 100);
+  if(enableView)
+    cv::namedWindow(id+"Output");
+  //cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
   cv::waitKey(30);
 
   while(nh.ok())
   {
     cv::Mat depth;
-    //cv::Point2f imagePoint = tracker.findMarker();
+    //cv::Point2f imagePoint = tracker.findMarker(); //old marker
     cv::KeyPoint imagePoint = tracker.detectMarker();
     cv::Point3f spacePoint = tracker.findCoord3D(imagePoint);
+
     tracker.getOutputFrame(out);
-    tracker.getDepthFrame(depth);
+    //tracker.getDepthFrame(depth); //Optional
 
     //Apply brightness-contrast
-    if (!out.empty())
+    if (enableView && !out.empty())
     {
       for( int y = 0; y < out.rows; y++)
         for( int x = 0; x < out.cols; x++)
@@ -176,59 +182,22 @@ int main (int argc , char* argv[])
             out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
     }
 
-    //Check bounds and select neighbors +-1 in X and Y axis to compute median
-//    if (imagePoint.x > 0 && imagePoint.x < out.cols && imagePoint.y > 0 && imagePoint.y < out.rows)
-//    {
-//      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y),1, cv::Scalar(255,0,0));
-//      cv::circle(out,cv::Point(imagePoint.x+1,imagePoint.y), 1, cv::Scalar(255,0,0));
-//      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y+1), 1, cv::Scalar(255,0,0));
-//      cv::circle(out,cv::Point(imagePoint.x-1,imagePoint.y), 1, cv::Scalar(255,0,0));
-//      cv::circle(out,cv::Point(imagePoint.x,imagePoint.y-1), 1, cv::Scalar(255,0,0));
-//    }
-
-    //imshow("test", depth);
-
-    imshow(id+"Output",out);
-    cv::waitKey(30);
-
-    if(imagePoint.pt.x!=0 && imagePoint.pt.y!=0 && spacePoint.z!=0)
-    {
-      //std::cout << "Coordinate 2D X:" << imagePoint.x << " Y: " << imagePoint.y << std::endl;
-      //std::cout << "Coordinate 3D X:" << spacePoint.x << " Y: " << spacePoint.y << " Z: " << spacePoint.z << std::endl;
-    }
-
-    //        tf::TransformListener listener;
-    //        tf::StampedTransform transform;
-    //        try {
-    //            listener.waitForTransform("world", id,
-    //                                      ros::Time(0), ros::Duration(1));
-    //            listener.lookupTransform("world", id, ros::Time(0), transform);
-    //            } catch (tf::TransformException &ex) {
-    //                ROS_ERROR("%s",ex.what());
-    //                ros::Duration(1.0).sleep();
-    //                continue;
-    //            }
-
-
-    //        tf::Vector3 pp(spacePoint.x, spacePoint.y, spacePoint.z);
-    //        tf::Vector3 p = transform * pp;
-
-    //        msg.point.x = p.getX();
-    //        msg.point.y = p.getY();
-    //        msg.point.z = p.getZ();
-
     msg.point.x = spacePoint.x;
     msg.point.y = spacePoint.y;
     msg.point.z = spacePoint.z;
-    //msg.header.frame_id = "world";
     msg.header.frame_id = id;
-
     position_pub.publish(msg);
 
     ros::spinOnce();
-    c = cv::waitKey(30);
-    if (c == 'q')
-      break;
+    if(enableView)
+    {
+      //imshow("test", depth);
+      imshow(id+"Output",out);
+
+      c = cv::waitKey(30);
+      if (c == 'q')
+        break;
+    }
   }
 
   return 0;

@@ -40,25 +40,8 @@ tf::StampedTransform k2transf;
 tf::StampedTransform k3transf;
 tf::StampedTransform k4transf;
 ros::Publisher position3D_pub;
-ros::Publisher test_pub;
 
-double getMedian(std::vector<double> coordinate)
-{
-  std::sort(coordinate.begin(), coordinate.end());
-
-  if(coordinate.size() != 0 )
-  {
-    if (coordinate.size() % 2 == 0)
-      return coordinate[coordinate.size()/2];
-    else
-      return coordinate[floor(coordinate.size()/2)];
-  } else {
-    std::cout << "Return -1" << std::endl;
-    return -1;
-  }
-}
-
-double getMedium(std::vector<double> coordinate)
+double getMedium(const std::vector<double> coordinate)
 {
   double sum = 0;
   for(int i = 0; i < coordinate.size(); ++i)
@@ -66,25 +49,23 @@ double getMedium(std::vector<double> coordinate)
   return sum/coordinate.size();
 }
 
-tf::Vector3 findMedian3D(std::vector<tf::Vector3> positions)
+tf::Vector3 findMedium3D(std::vector<tf::Vector3> position, std::vector<tf::Vector3> positionTransf)
 {
   std::vector<double> xPoints;
   std::vector<double> yPoints;
   std::vector<double> zPoints;
 
-  for(int i = 0; i< positions.size(); ++i)
+  //Loop and check if the original positions has -1, if it has then its not valid
+  for(int i = 0; i< positionTransf.size(); ++i)
   {
-    //std::cout << i << " X: " << positions[i].getX() << " Y :"
-    //          << positions[i].getY() << " Z: "
-    //          << positions[i].getZ() << std::endl;
-    if(positions[i].getX() != -1)
-      xPoints.push_back(positions[i].getX());
-    if(positions[i].getY() != -1)
-      yPoints.push_back(positions[i].getY());
-    if(positions[i].getZ() != -1)
-      zPoints.push_back(positions[i].getZ());
+    if(position[i].getX() != -1 && position[i].getY() != -1 && position[i].getZ() != -1)
+    {
+      xPoints.push_back(positionTransf[i].getX());
+      yPoints.push_back(positionTransf[i].getY());
+      zPoints.push_back(positionTransf[i].getZ());
+    }
+
   }
-  std::cout << "Size X: " << xPoints.size() << " Size Y: " << yPoints.size() << " Size Z: " << zPoints.size() << std::endl;
   return tf::Vector3(getMedium(xPoints), getMedium(yPoints), getMedium(zPoints));
 }
 
@@ -96,7 +77,11 @@ void positionCb(const geometry_msgs::PointStampedConstPtr pos1,
   //std::cout << "SEQS:: " << pos1->header.seq << " " << pos2->header.seq <<
   //" " << pos3->header.seq << std::endl;
 
-  tf::Vector3 point2, point3, point4;
+  tf::Vector3 point1, point2, point3, point4;
+  point1.setX(pos1->point.x);
+  point1.setY(pos1->point.y);
+  point1.setZ(pos1->point.z);
+
   point2.setX(pos2->point.x);
   point2.setY(pos2->point.y);
   point2.setZ(pos2->point.z);
@@ -109,35 +94,38 @@ void positionCb(const geometry_msgs::PointStampedConstPtr pos1,
   point4.setY(pos4->point.y);
   point4.setZ(pos4->point.z);
 
-  tf::Vector3 point1;
-  point1.setX(pos1->point.x);
-  point1.setY(pos1->point.y);
-  point1.setZ(pos1->point.z);
+  //Apply transform to "kinect_01" frame as master
   tf::Vector3 transfPoint2 = k2transf * point2;
   tf::Vector3 transfPoint3 = k3transf * point3;
   tf::Vector3 transfPoint4 = k4transf * point4;
-  std::vector<tf::Vector3> pointsVec;
+  std::vector<tf::Vector3> pointsVecTransf, pointsVec;
+
+  pointsVecTransf.push_back(point1);
+  pointsVecTransf.push_back(transfPoint2);
+  pointsVecTransf.push_back(transfPoint3);
+  pointsVecTransf.push_back(transfPoint4);
+
   pointsVec.push_back(point1);
   pointsVec.push_back(point2);
   pointsVec.push_back(point3);
   pointsVec.push_back(point4);
 
-  std::cout << "1 X: " << point1.getX() << " Y: " << point1.getY() << " Z: " << point1.getZ() << std::endl;
+//  std::cout << "1 X: " << point1.getX() << " Y: " << point1.getY() << " Z: " << point1.getZ() << std::endl;
 
-  std::cout << "2 X: " << point2.getX() << " new X: " << transfPoint2.getX()
-            << " Y: "  << point2.getX() << " new Y: " << transfPoint2.getY()
-            << " Z: "  << point2.getX() << " new Z: " << transfPoint2.getZ() << std::endl;
+//  std::cout << "2 X: " << point2.getX() << " new X: " << transfPoint2.getX()
+//            << " Y: "  << point2.getX() << " new Y: " << transfPoint2.getY()
+//            << " Z: "  << point2.getX() << " new Z: " << transfPoint2.getZ() << std::endl;
 
-  std::cout << "3 X: " << point3.getX() << " new X: " << transfPoint3.getX()
-            << " Y: "  << point3.getY() << " new Y: " << transfPoint3.getY()
-            << " Z: "  << point3.getZ() << " new Z: " << transfPoint3.getZ() << std::endl;
+//  std::cout << "3 X: " << point3.getX() << " new X: " << transfPoint3.getX()
+//            << " Y: "  << point3.getY() << " new Y: " << transfPoint3.getY()
+//            << " Z: "  << point3.getZ() << " new Z: " << transfPoint3.getZ() << std::endl;
 
-  std::cout << "4 X: " << point4.getX() << " new X: " << transfPoint4.getX()
-            << " Y: "  << point4.getY() << " new Y: " << transfPoint4.getY()
-            << " Z: "  << point4.getZ() << " new Z: " << transfPoint4.getZ() << std::endl;
+//  std::cout << "4 X: " << point4.getX() << " new X: " << transfPoint4.getX()
+//            << " Y: "  << point4.getY() << " new Y: " << transfPoint4.getY()
+//            << " Z: "  << point4.getZ() << " new Z: " << transfPoint4.getZ() << std::endl;
 
   //FILTER and median
-  tf::Vector3 pointOut = findMedian3D(pointsVec);
+  tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
   std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
                pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
 
@@ -149,14 +137,6 @@ void positionCb(const geometry_msgs::PointStampedConstPtr pos1,
 
   position3D_pub.publish(msg);
 
-  geometry_msgs::PointStamped msg_test;
-  msg_test.point.x = transfPoint2.getX();
-  msg_test.point.y = transfPoint2.getY();
-  msg_test.point.z = transfPoint2.getZ();
-  msg_test.header.frame_id = "kinect_02"; // kinect_01 is master
-  test_pub.publish(msg_test);
-
-
   //KALMAN
 
 }
@@ -167,20 +147,18 @@ int main (int argc , char* argv[])
   ros::NodeHandle nh("~");
 
   position3D_pub = nh.advertise<geometry_msgs::PointStamped>("position3D", 10);
-  test_pub = nh.advertise<geometry_msgs::PointStamped>("test_kinect_02", 10);
 
-
-  message_filters::Subscriber<geometry_msgs::PointStamped> k1_sub(nh, "/detector_01/position", 1);
-  message_filters::Subscriber<geometry_msgs::PointStamped> k2_sub(nh, "/detector_02/position", 1);
-  message_filters::Subscriber<geometry_msgs::PointStamped> k3_sub(nh, "/detector_03/position", 1);
-  message_filters::Subscriber<geometry_msgs::PointStamped> k4_sub(nh, "/detector_04/position", 1);
+  message_filters::Subscriber<geometry_msgs::PointStamped> k1_sub(nh, "/detector_01/position", 5);
+  message_filters::Subscriber<geometry_msgs::PointStamped> k2_sub(nh, "/detector_02/position", 5);
+  message_filters::Subscriber<geometry_msgs::PointStamped> k3_sub(nh, "/detector_03/position", 5);
+  message_filters::Subscriber<geometry_msgs::PointStamped> k4_sub(nh, "/detector_04/position", 5);
 
   typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PointStamped,
       geometry_msgs::PointStamped,
       geometry_msgs::PointStamped,
       geometry_msgs::PointStamped> PosSyncPolicy;
 
-  message_filters::Synchronizer<PosSyncPolicy> sync(PosSyncPolicy(20), k1_sub, k2_sub, k3_sub, k4_sub);
+  message_filters::Synchronizer<PosSyncPolicy> sync(PosSyncPolicy(10), k1_sub, k2_sub, k3_sub, k4_sub);
   sync.registerCallback(boost::bind(&positionCb, _1, _2, _3, _4));
 
 
@@ -216,7 +194,7 @@ int main (int argc , char* argv[])
   while(nh.ok()) {
     try {
       listener.lookupTransform("kinect_01", "kinect_04",
-                               ros::Time(0), k3transf);
+                               ros::Time(0), k4transf);
     } catch (tf::TransformException &ex) {
       ROS_ERROR("%s",ex.what());
       ros::Duration(1.0).sleep();
