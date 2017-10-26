@@ -42,6 +42,8 @@ tf::StampedTransform k2transf;
 tf::StampedTransform k3transf;
 tf::StampedTransform k4transf;
 ros::Publisher position3D_pub;
+ros::Publisher positionKF_pub;
+
 
 tf::Vector3 point1, point2, point3, point4;
 tf::Vector3 transfPoint2, transfPoint3, transfPoint4;
@@ -204,9 +206,26 @@ void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
   position3D_pub.publish(msg);
 
   //KALMAN
-
+  if(pointOut.getX() == pointOut.getX())
+  {
   cv::Mat prediction = KF.predict();
-  //cv::Point
+  std::cout << "Prediction X: " << prediction.at<float>(0) << " Y: " << prediction.at<float>(1)
+            << " Z: " << prediction.at<float>(2) << std::endl;
+
+  measurement.at<float>(0) = pointOut.getX();
+  measurement.at<float>(1) = pointOut.getY();
+  measurement.at<float>(2) = pointOut.getZ();
+
+  cv::Mat estimated = KF.correct(measurement);
+
+  std::cout << "Estimated X: " << estimated.at<float>(0) << " Y: " << estimated.at<float>(1)
+            << " Z: " << estimated.at<float>(2) << std::endl;
+
+  msg.point.x = estimated.at<float>(0);
+  msg.point.y = estimated.at<float>(1);
+  msg.point.z = estimated.at<float>(2);
+  positionKF_pub.publish(msg);
+  }
 
 }
 
@@ -216,20 +235,38 @@ int main (int argc , char* argv[])
   ros::NodeHandle nh("~");
 
   position3D_pub = nh.advertise<geometry_msgs::PointStamped>("position3D", 1);
+  positionKF_pub = nh.advertise<geometry_msgs::PointStamped>("positionKF", 1);
 
   //Kalman Filter Initialization
   //KF(9, 3, 0);
-  KF.transitionMatrix = *(cv::Mat_<float>(9,9) << 1,0,0,1,0,0,1,0,0, 0,1,0,0,1,0,0,1,0, 0,0,1,0,0,1,0,0,1);
-  measurement.setTo(Scalar(0));
 
-//  cv::Mat state(9, 3, CV_32F);
-//  cv::Mat processNoise(9, 3, CV_32F);
-//  cv::Mat measurement = cv::Mat::zeros(3,1, CV_32F);
+  cv::Mat state(9,3, CV_32F);
+  cv::Mat processNoise(9, 3, CV_32F);
+  measurement = cv::Mat::zeros(3, 1, CV_32F);
+  randn( state, cv::Scalar::all(0), cv::Scalar::all(0.1) );
+  KF.transitionMatrix = (cv::Mat_<float>(9,9) << 1,0,0,1,0,0,1,0,0,
+                                                 0,1,0,0,1,0,0,1,0,
+                                                 0,0,1,0,0,1,0,0,1,
+                                                 0,0,0,1,0,0,1,0,0,
+                                                 0,0,0,0,1,0,0,1,0,
+                                                 0,0,0,0,0,1,0,0,1,
+                                                 0,0,0,0,0,0,1,0,1,
+                                                 0,0,0,0,0,0,0,1,0,
+                                                 0,0,0,0,0,0,0,0,1 );
+
+
+  measurement.setTo(cv::Scalar(0));
+
+  for(int i = 0; i < KF.statePre.rows; ++i )
+  {
+    KF.statePre.at<float>(i) = 0;
+  }
 
   cv::setIdentity(KF.measurementMatrix);
   cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-5));
   cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-1));
   cv::setIdentity(KF.errorCovPost, cv::Scalar::all(1));
+  randn(KF.statePost, cv::Scalar::all(0), cv::Scalar::all(0.1));
 
 
   //Initialize pointsVec and pointsVecTransf
