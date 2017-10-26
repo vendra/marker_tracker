@@ -34,6 +34,8 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <tf/transform_listener.h>
 
+#include <opencv2/video/tracking.hpp>
+
 #include <math.h>
 
 tf::StampedTransform k2transf;
@@ -44,6 +46,11 @@ ros::Publisher position3D_pub;
 tf::Vector3 point1, point2, point3, point4;
 tf::Vector3 transfPoint2, transfPoint3, transfPoint4;
 std::vector<tf::Vector3> pointsVecTransf, pointsVec;
+
+//Kalman Filter
+cv::KalmanFilter KF(9,3,0);
+cv::Mat_<float> measurement(3,1);
+
 
 double getMedium(const std::vector<double> coordinate)
 {
@@ -183,20 +190,24 @@ void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
   }
 
 
-//Update Medium Point
-tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
-std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
-             pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
+  //Update Medium Point
+  tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
+  std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
+               pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
 
-geometry_msgs::PointStamped msg;
-msg.point.x = pointOut.getX();
-msg.point.y = pointOut.getY();
-msg.point.z = pointOut.getZ();
-msg.header.frame_id = "kinect_01"; // kinect_01 is master
+  geometry_msgs::PointStamped msg;
+  msg.point.x = pointOut.getX();
+  msg.point.y = pointOut.getY();
+  msg.point.z = pointOut.getZ();
+  msg.header.frame_id = "kinect_01"; // kinect_01 is master
 
-position3D_pub.publish(msg);
+  position3D_pub.publish(msg);
 
-//KALMAN
+  //KALMAN
+
+  cv::Mat prediction = KF.predict();
+  //cv::Point
+
 }
 
 int main (int argc , char* argv[])
@@ -206,6 +217,21 @@ int main (int argc , char* argv[])
 
   position3D_pub = nh.advertise<geometry_msgs::PointStamped>("position3D", 1);
 
+  //Kalman Filter Initialization
+  //KF(9, 3, 0);
+  KF.transitionMatrix = *(cv::Mat_<float>(9,9) << 1,0,0,1,0,0,1,0,0, 0,1,0,0,1,0,0,1,0, 0,0,1,0,0,1,0,0,1);
+  measurement.setTo(Scalar(0));
+
+//  cv::Mat state(9, 3, CV_32F);
+//  cv::Mat processNoise(9, 3, CV_32F);
+//  cv::Mat measurement = cv::Mat::zeros(3,1, CV_32F);
+
+  cv::setIdentity(KF.measurementMatrix);
+  cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-5));
+  cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-1));
+  cv::setIdentity(KF.errorCovPost, cv::Scalar::all(1));
+
+
   //Initialize pointsVec and pointsVecTransf
   for(int i=0; i<4; ++i)
   {
@@ -213,12 +239,13 @@ int main (int argc , char* argv[])
     pointsVecTransf.push_back(tf::Vector3(0,0,0));
   }
 
+
   ros::Subscriber detect_01_sub = nh.subscribe("/detector_01/position", 5, &singlePointCb);
   ros::Subscriber detect_02_sub = nh.subscribe("/detector_02/position", 5, &singlePointCb);
   ros::Subscriber detect_03_sub = nh.subscribe("/detector_03/position", 5, &singlePointCb);
   ros::Subscriber detect_04_sub = nh.subscribe("/detector_04/position", 5, &singlePointCb);
 
-      /*
+  /*
       //ApproximateTime Filter
       message_filters::Subscriber<geometry_msgs::PointStamped> k1_sub(nh, "/detector_01/position", 1);
       message_filters::Subscriber<geometry_msgs::PointStamped> k2_sub(nh, "/detector_02/position", 1);
@@ -234,8 +261,8 @@ int main (int argc , char* argv[])
       sync.registerCallback(boost::bind(&positionCb, _1, _2, _3, _4));
       */
 
-      //Lookup transform from kx to master k1 for example
-      tf::TransformListener listener;
+  //Lookup transform from kx to master k1 for example
+  tf::TransformListener listener;
 
   while(nh.ok()) {
     try {
