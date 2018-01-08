@@ -44,6 +44,11 @@ tf::StampedTransform k4transf;
 ros::Publisher position3D_pub;
 ros::Publisher positionKF_pub;
 
+//Global Flag for synchronization
+bool new_pos_1 = false;
+bool new_pos_2 = false;
+bool new_pos_3 = false;
+bool new_pos_4 = false;
 
 tf::Vector3 point1, point2, point3, point4;
 tf::Vector3 transfPoint2, transfPoint3, transfPoint4;
@@ -162,6 +167,7 @@ void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
     point1.setZ(pos->point.z);
     pointsVec[0] = point1;
     pointsVecTransf[0] = point1;
+    new_pos_1 = true;
   }
   if(frame == "kinect_02")
   {
@@ -171,6 +177,7 @@ void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
     transfPoint2 = k2transf * point2;
     pointsVec[1] = point2;
     pointsVecTransf[1] = transfPoint2;
+    new_pos_2 = true;
   }
   if(frame == "kinect_03")
   {
@@ -180,6 +187,7 @@ void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
     transfPoint3 = k3transf * point3;
     pointsVec[2] = point3;
     pointsVecTransf[2] = transfPoint3;
+    new_pos_3 = true;
   }
   if(frame == "kinect_04")
   {
@@ -189,43 +197,77 @@ void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
     transfPoint4 = k4transf * point4;
     pointsVec[3] = point4;
     pointsVecTransf[3] = transfPoint4;
+    new_pos_4 = true;
   }
 
 
   //Update Medium Point
-  tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
-  std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
-               pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
-
-  geometry_msgs::PointStamped msg;
-  msg.point.x = pointOut.getX();
-  msg.point.y = pointOut.getY();
-  msg.point.z = pointOut.getZ();
-  msg.header.frame_id = "kinect_01"; // kinect_01 is master
-
-  position3D_pub.publish(msg);
-
-  //KALMAN
-  if(pointOut.getX() == pointOut.getX())
+  if (new_pos_1 && new_pos_2 && new_pos_3 && new_pos_4)
   {
-  cv::Mat prediction = KF.predict();
-  std::cout << "Prediction X: " << prediction.at<float>(0) << " Y: " << prediction.at<float>(1)
-            << " Z: " << prediction.at<float>(2) << std::endl;
+    //Reset states
+    new_pos_1 = false;
+    new_pos_2 = false;
+    new_pos_3 = false;
+    new_pos_4 = false;
 
-  measurement.at<float>(0) = pointOut.getX();
-  measurement.at<float>(1) = pointOut.getY();
-  measurement.at<float>(2) = pointOut.getZ();
+    tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
+    std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
+                 pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
 
-  cv::Mat estimated = KF.correct(measurement);
+    geometry_msgs::PointStamped msg;
+    msg.point.x = pointOut.getX();
+    msg.point.y = pointOut.getY();
+    msg.point.z = pointOut.getZ();
+    msg.header.frame_id = "kinect_01"; // kinect_01 is master
 
-  std::cout << "Estimated X: " << estimated.at<float>(0) << " Y: " << estimated.at<float>(1)
-            << " Z: " << estimated.at<float>(2) << std::endl;
+    position3D_pub.publish(msg);
 
-  msg.point.x = estimated.at<float>(0);
-  msg.point.y = estimated.at<float>(1);
-  msg.point.z = estimated.at<float>(2);
-  positionKF_pub.publish(msg);
-  }
+    //KALMAN
+    if(pointOut.getX() == pointOut.getX())
+    {
+      cv::Mat prediction = KF.predict();
+      std::cout << "Prediction X: " << prediction.at<float>(0) << " Y: " << prediction.at<float>(1)
+                << " Z: " << prediction.at<float>(2) << std::endl;
+
+      //  if(frame == "kinect_01")
+      //  {
+      //  measurement.at<float>(0) = pos->point.x;
+      //  measurement.at<float>(1) = pos->point.y;
+      //  measurement.at<float>(2) = pos->point.z;
+      //  }
+      //  if(frame == "kinect_02")
+      //  {
+      //  measurement.at<float>(0) = transfPoint2.getX();
+      //  measurement.at<float>(1) = transfPoint2.getY();
+      //  measurement.at<float>(2) = transfPoint2.getZ();
+      //  }
+      //  if(frame == "kinect_03")
+      //  {
+      //  measurement.at<float>(0) = transfPoint3.getX();
+      //  measurement.at<float>(1) = transfPoint3.getY();
+      //  measurement.at<float>(2) = transfPoint3.getZ();
+      //  }
+      //  if(frame == "kinect_04")
+      //  {
+      //  measurement.at<float>(0) = transfPoint4.getX();
+      //  measurement.at<float>(1) = transfPoint4.getY();
+      //  measurement.at<float>(2) = transfPoint4.getZ();
+      //  }
+      measurement.at<float>(0) = pointOut.getX();
+      measurement.at<float>(1) = pointOut.getY();
+      measurement.at<float>(2) = pointOut.getZ();
+
+      cv::Mat estimated = KF.correct(measurement);
+
+      std::cout << "Estimated X: " << estimated.at<float>(0) << " Y: " << estimated.at<float>(1)
+                << " Z: " << estimated.at<float>(2) << std::endl;
+
+      msg.point.x = estimated.at<float>(0);
+      msg.point.y = estimated.at<float>(1);
+      msg.point.z = estimated.at<float>(2);
+      positionKF_pub.publish(msg);
+    }
+  } //If new_pos_X Update-mean
 
 }
 
@@ -244,15 +286,18 @@ int main (int argc , char* argv[])
   cv::Mat processNoise(9, 3, CV_32F);
   measurement = cv::Mat::zeros(3, 1, CV_32F);
   randn( state, cv::Scalar::all(0), cv::Scalar::all(0.1) );
-  KF.transitionMatrix = (cv::Mat_<float>(9,9) << 1,0,0,1,0,0,1,0,0,
-                                                 0,1,0,0,1,0,0,1,0,
-                                                 0,0,1,0,0,1,0,0,1,
-                                                 0,0,0,1,0,0,1,0,0,
-                                                 0,0,0,0,1,0,0,1,0,
-                                                 0,0,0,0,0,1,0,0,1,
-                                                 0,0,0,0,0,0,1,0,1,
-                                                 0,0,0,0,0,0,0,1,0,
-                                                 0,0,0,0,0,0,0,0,1 );
+  double dt = 1.0/53;
+  double a = 0.5*dt*dt;
+  KF.transitionMatrix = (cv::Mat_<float>(9,9) <<
+                         1,0,0,dt,0,0,a,0,0,
+                         0,1,0,0,dt,0,0,a,0,
+                         0,0,1,0,0,dt,0,0,a,
+                         0,0,0,1,0,0,dt,0,0,
+                         0,0,0,0,1,0,0,dt,0,
+                         0,0,0,0,0,1,0,0,dt,
+                         0,0,0,0,0,0,1,0,0,
+                         0,0,0,0,0,0,0,1,0,
+                         0,0,0,0,0,0,0,0,1 );
 
 
   measurement.setTo(cv::Scalar(0));
@@ -263,8 +308,8 @@ int main (int argc , char* argv[])
   }
 
   cv::setIdentity(KF.measurementMatrix);
-  cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-5));
-  cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-1));
+  cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-3));
+  cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-3));
   cv::setIdentity(KF.errorCovPost, cv::Scalar::all(1));
   randn(KF.statePost, cv::Scalar::all(0), cv::Scalar::all(0.1));
 
