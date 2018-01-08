@@ -33,9 +33,7 @@
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <tf/transform_listener.h>
-
 #include <opencv2/video/tracking.hpp>
-
 #include <math.h>
 
 tf::StampedTransform k2transf;
@@ -222,7 +220,7 @@ void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
 
     position3D_pub.publish(msg);
 
-    //KALMAN
+    //APPLY KALMAN
     if(pointOut.getX() == pointOut.getX())
     {
       cv::Mat prediction = KF.predict();
@@ -280,13 +278,11 @@ int main (int argc , char* argv[])
   positionKF_pub = nh.advertise<geometry_msgs::PointStamped>("positionKF", 1);
 
   //Kalman Filter Initialization
-  //KF(9, 3, 0);
-
   cv::Mat state(9,3, CV_32F);
   cv::Mat processNoise(9, 3, CV_32F);
   measurement = cv::Mat::zeros(3, 1, CV_32F);
   randn( state, cv::Scalar::all(0), cv::Scalar::all(0.1) );
-  double dt = 1.0/53;
+  double dt = 1.0/30;
   double a = 0.5*dt*dt;
   KF.transitionMatrix = (cv::Mat_<float>(9,9) <<
                          1,0,0,dt,0,0,a,0,0,
@@ -328,20 +324,20 @@ int main (int argc , char* argv[])
   ros::Subscriber detect_04_sub = nh.subscribe("/detector_04/position", 5, &singlePointCb);
 
   /*
-      //ApproximateTime Filter
-      message_filters::Subscriber<geometry_msgs::PointStamped> k1_sub(nh, "/detector_01/position", 1);
-      message_filters::Subscriber<geometry_msgs::PointStamped> k2_sub(nh, "/detector_02/position", 1);
-      message_filters::Subscriber<geometry_msgs::PointStamped> k3_sub(nh, "/detector_03/position", 1);
-      message_filters::Subscriber<geometry_msgs::PointStamped> k4_sub(nh, "/detector_04/position", 1);
+  //ApproximateTime Filter
+  message_filters::Subscriber<geometry_msgs::PointStamped> k1_sub(nh, "/detector_01/position", 1);
+  message_filters::Subscriber<geometry_msgs::PointStamped> k2_sub(nh, "/detector_02/position", 1);
+  message_filters::Subscriber<geometry_msgs::PointStamped> k3_sub(nh, "/detector_03/position", 1);
+  message_filters::Subscriber<geometry_msgs::PointStamped> k4_sub(nh, "/detector_04/position", 1);
 
-      typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PointStamped,
-          geometry_msgs::PointStamped,
-          geometry_msgs::PointStamped,
-          geometry_msgs::PointStamped> PosSyncPolicy;
+  typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PointStamped,
+                                                          geometry_msgs::PointStamped,
+                                                          geometry_msgs::PointStamped,
+                                                          geometry_msgs::PointStamped> PosSyncPolicy;
 
-      message_filters::Synchronizer<PosSyncPolicy> sync(PosSyncPolicy(50), k1_sub, k2_sub, k3_sub, k4_sub);
-      sync.registerCallback(boost::bind(&positionCb, _1, _2, _3, _4));
-      */
+  message_filters::Synchronizer<PosSyncPolicy> sync(PosSyncPolicy(50), k1_sub, k2_sub, k3_sub, k4_sub);
+  sync.registerCallback(boost::bind(&positionCb, _1, _2, _3, _4));
+  */
 
   //Lookup transform from kx to master k1 for example
   tf::TransformListener listener;

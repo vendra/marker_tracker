@@ -73,12 +73,13 @@ int main (int argc , char* argv[])
   std::string id = argv[1];
   //nh.getParam("id", id);
 
+  //Checks for arguments
   bool enableView = true;
   if(argc == 3)
   {
     std::string view = argv[2];
     if(view == "--noview")
-      enableView = false;
+      enableView = false; //disable window visualizations
   }
   ros::Publisher position_pub = nh.advertise<geometry_msgs::PointStamped>("position", 10);
   geometry_msgs::PointStamped msg;
@@ -86,8 +87,7 @@ int main (int argc , char* argv[])
   msg.point.y = 0;
   msg.point.z = 0;
 
-  //For now all nodes uses the same YAML but its easy to replace using files with
-  //id.yaml and reading those instead
+  //Loads the correct .YAML file containing correct detector parameters and camera calibration params
   std::string param_path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
   std::string calib_path = ros::package::getPath("marker_tracker")+"/param/"+id+".yaml";
   std::cout << "param path: " << param_path << std::endl;
@@ -104,6 +104,7 @@ int main (int argc , char* argv[])
   cv::Mat frame, out;
   std::vector<cv::Point2f> maskPoints;
 
+  //GUI
   int con_slider = 0;
   int bri_slider = 0;
   cv::startWindowThread();
@@ -118,16 +119,17 @@ int main (int argc , char* argv[])
   char c;
   bool exit_key_pressed = false;
 #ifdef SETUP
+
+  //Main computation loop
   while (!exit_key_pressed)
   {
     ros::spinOnce();
 
-    //tracker.getIRFrame(frame);
+    //Apply user mask, detect marker and get an image to show the user
     tracker.setMask(maskPoints);
     tracker.findMarker();
     tracker.getOutputFrame(out);
 
-    //Workaround to make synch work, master needs to start after all topics are already publishing
     position_pub.publish(msg);
 
     //Brightness setup visulization

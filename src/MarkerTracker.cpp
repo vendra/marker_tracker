@@ -1,7 +1,32 @@
-/** Federico Vendramin 8 Maggio 2016
+/** Elaborazione dei dati tridimensionali - Università degli studi di Padova
  *
- *  MarkerTracker.cpp
+ *  Created 8th May 2016
  *
+ *  Copyright (c) 2016- VENDRAMIN FEDERICO <federico.vendramin@gmail.com>
+ *
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *     1. Redistributions of source code must retain the above copyright
+ *        notice, this list of conditions and the following disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright
+ *        notice, this list of conditions and the following disclaimer in the
+ *        documentation and/or other materials provided with the distribution.
+ *     3. Neither the name of the copyright holder(s) nor the
+ *        names of its contributors may be used to endorse or promote products
+ *        derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <MarkerTracker.hpp>
@@ -108,7 +133,6 @@ void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 }
 
-
 void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr&  msg)
 {
   cv_bridge::CvImagePtr cv_ptr;
@@ -125,13 +149,12 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr&  msg)
 
 }
 
-//Should I add a time synchronizer to get the IR and depth synchronized toghether??
-
 void MarkerTracker::setMask(const std::vector<cv::Point2f> points)
 {
   maskPoints = points;
 }
 
+//Apply user masking
 void MarkerTracker::applyMask()
 {   
   //Mask clicked points
@@ -139,7 +162,7 @@ void MarkerTracker::applyMask()
     cv::circle(frame_, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
 }
 
-
+//Legacy - Spheric Marker
 cv::Point2f MarkerTracker::findMarker()
 {
   applyMask();
@@ -157,6 +180,7 @@ cv::Point2f MarkerTracker::findMarker()
   return p;
 }
 
+//New - Cubic Marker
 cv::KeyPoint MarkerTracker::detectMarker()
 {
   applyMask();
@@ -248,15 +272,15 @@ cv::Point3f MarkerTracker::findCoord3D(cv::KeyPoint point)
   return cv::Point3f(X,Y,Z);
 }
 
-
+//Computes the Depth of the detected marker. Filter out points lying on the marker's edges.
 void MarkerTracker::findDepthValues()
 {
-  depthValues.resize(0); //resets precedent residual valuesù
+  depthValues.resize(0); //resets precedent residual values
   depthPoints.resize(0);
 
   for(int i = centerX - radius; i < centerX + radius; ++i) {
     for(int j = centerY - radius; j < centerY + radius; ++j) {
-      //Scan all points in rectangle
+      //Scan all points in rectangle, selects points not on a edge
       if (frame_.at<uchar>(j,i) >= 245) {
         continue;
       } else if (pow(centerX - i, 2) + pow(centerY - j, 2) <= pow(radius/2,1.5)) {
@@ -264,8 +288,6 @@ void MarkerTracker::findDepthValues()
         if (depthTemp != 0) {
           depthValues.push_back(depthTemp);
           depthPoints.push_back(cv::Point(i,j));
-          //cv::circle(frame_, cv::Point(i,j), 1, cv::Scalar(0, 255, 0));
-          //Should remove this cv::circle and add it to output function
         }
       }
     } // nested for
@@ -273,6 +295,7 @@ void MarkerTracker::findDepthValues()
 }
 
 //private
+//Computes the median point
 void MarkerTracker::findMedianDepth()
 {
   std::sort(depthValues.begin(), depthValues.end());
@@ -291,6 +314,8 @@ void MarkerTracker::findMedianDepth()
 }
 
 //private
+//Refines the median point by removing points too far from the median and computing again
+//This can be avoided since the medianDepth is already good enough.
 void MarkerTracker::refineMedianDepth()
 {
   if(depthValues.size() != 0 )
@@ -311,12 +336,11 @@ void MarkerTracker::refineMedianDepth()
         medianDepth = refinedValues[floor(refinedValues.size()/2)];
 
       //std::cout << "REFINED minValue: " << refinedValues[0] << " avgValue: " << medianDepth << " maxValue: " << refinedValues[refinedValues.size()-1] << std::endl;
-
     }
   }
 }
 
-
+//Computes the depth of the marker, descripted by a cv::Keypoint
 //Assumes it is a valid keypoint of a valid detection
 void MarkerTracker::findMarkerDepth(const cv::KeyPoint markerKeypoint)
 {
@@ -369,25 +393,12 @@ void MarkerTracker::getOutputFrame(cv::Mat &out)
   {
     cv::Mat im;
     frame_.convertTo(im, CV_8UC1, 1.0/256);
-
-    //cv::drawKeypoints( frame_, keypoints_, im_with_keypoints_, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DEFAULT );
-
-    // Brighten image to visualize it easily
-
-    /*for( int y = 0; y < im.rows; y++ )
-            for( int x = 0; x < im.cols; x++ )
-                for( int c = 0; c < 3; c++ )
-                    im.at<uchar>(y,x) = cv::saturate_cast<uchar>( 2.2*( im.at<uchar>(y,x)) );
-         */
     cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
 
     for(int i = 0; i < depthPoints.size(); ++i)
       cv::circle(im, depthPoints[i], 1, cv::Scalar(0, 255, 0));
 
-//    for (int i = 0; i < keypoints_.size(); ++i)
-//      cv::circle(im, keypoints_[i].pt, 5, cv::Scalar(0,255,0), 2);
     cv::drawKeypoints(im , keypoints, im, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-
     out = im;
   }
 }
