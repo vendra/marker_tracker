@@ -33,6 +33,7 @@
 #include <tf/transform_listener.h>
 
 
+//Enables the setup phase, should be active
 #define SETUP
 
 cv::Mat depth_frame;
@@ -71,7 +72,6 @@ int main (int argc , char* argv[])
 
   //Read ID
   std::string id = argv[1];
-  //nh.getParam("id", id);
 
   //Checks for arguments
   bool enableView = true;
@@ -81,6 +81,7 @@ int main (int argc , char* argv[])
     if(view == "--noview")
       enableView = false; //disable window visualizations
   }
+
   ros::Publisher position_pub = nh.advertise<geometry_msgs::PointStamped>("position", 10);
   geometry_msgs::PointStamped msg;
   msg.point.x = 0;
@@ -141,15 +142,17 @@ int main (int argc , char* argv[])
             out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
     }
 
-    //View black mask
+    //Show black mask
     for(int i=0; i < maskPoints.size(); ++i)
       cv::circle(out, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
 
+    //Show setup frame
     cv::imshow(id+"Setup", out);
     c = cv::waitKey(30);
+
     if (c == 'q')
       exit_key_pressed = true;
-    if (c== '.')
+    if (c== '.') //To reload detection parameters from.yaml
       tracker.readInputParams(param_path);
   }
 
@@ -159,7 +162,7 @@ int main (int argc , char* argv[])
   cv::waitKey(30);
   ROS_INFO("Setup Completed");
 
-  // Create new Window
+  // Create new Window for output
   if(enableView)
     cv::namedWindow(id+"Output");
   //cv::createTrackbar("Contrast", id+"Setup", &con_slider, 240);
@@ -171,17 +174,13 @@ int main (int argc , char* argv[])
 
   while(nh.ok())
   {
-    //cv::Point2f imagePoint = tracker.findMarker(); //old marker
-    if(tracker.newFrameArrived())
+    if(tracker.hasIR()) // Checks frames are being published
     {
-      imagePoint = tracker.detectMarker();
-      spacePoint = tracker.findCoord3D(imagePoint);
+      imagePoint = tracker.detectMarker(); // detection
+      spacePoint = tracker.findCoord3D(imagePoint); // projection
 
       if(enableView)
-      {
         tracker.getOutputFrame(out);
-        //tracker.getDepthFrame(depth); //Optional
-      }
 
       //Apply brightness-contrast
       if (enableView && !out.empty())
@@ -192,6 +191,7 @@ int main (int argc , char* argv[])
               out.at<cv::Vec3b>(y,x)[c] = cv::saturate_cast<uchar>((40+con_slider)/(40.0)*( out.at<cv::Vec3b>(y,x)[c]) + bri_slider);
       }
 
+      // Publish estimated 3D point
       msg.point.x = spacePoint.x;
       msg.point.y = spacePoint.y;
       msg.point.z = spacePoint.z;

@@ -45,8 +45,6 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
   Y = 0.0;
   Z = 0.0;
 
-  newFrame = false;
-
   image_path_ = image_path;
   depth_path_ = depth_path;
 
@@ -60,6 +58,10 @@ MarkerTracker::MarkerTracker(std::string image_path, std::string depth_path,
   detector = cv::SimpleBlobDetector::create(params);
 }
 
+/*
+ * Parses parameters from specified file in the path
+ *
+ */
 bool MarkerTracker::readInputParams(std::string path)
 {
 
@@ -94,28 +96,11 @@ bool MarkerTracker::readInputParams(std::string path)
   return true;
 }
 
-bool MarkerTracker::readCameraParams(std::string path) //make private
-{
-  std::cout << "Reading camera parameters from input file.. \n";
 
-  cv::FileStorage fs(path, cv::FileStorage::READ);
-  if ( !fs.isOpened() )
-  {
-    std::cout << "Cannot open " << path << std::endl;
-    return false;
-  }
 
-  fs["cameraMatrix"] >> cameraMatrix;
-  fs["distortionCoefficients"]   >> distCoeffs;
-
-  std::cout << "Camera calibration parameters OK!" << std::endl;
-  std::cout << "camera matrix: " << cameraMatrix << std::endl;
-  std::cout << "distortion coeffs: " << distCoeffs << std::endl;
-
-}
-
-bool MarkerTracker::newFrameArrived(){ return newFrame; }
-
+/*
+ * IR image callback
+ */
 void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
   cv_bridge::CvImagePtr cv_ptr;
@@ -129,10 +114,11 @@ void MarkerTracker::imageCb(const sensor_msgs::ImageConstPtr& msg)
     return;
   }
   frame_ = cv_ptr->image;
-  newFrame = true;
-
 }
 
+/*
+ * Depth image callback
+ */
 void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr&  msg)
 {
   cv_bridge::CvImagePtr cv_ptr;
@@ -149,20 +135,18 @@ void MarkerTracker::depthCb(const sensor_msgs::ImageConstPtr&  msg)
 
 }
 
+/*
+ * Set the specified vector of points as the new mask
+ */
 void MarkerTracker::setMask(const std::vector<cv::Point2f> points)
 {
   maskPoints = points;
 }
 
-//Apply user masking
-void MarkerTracker::applyMask()
-{   
-  //Mask clicked points
-  for(int i=0; i<maskPoints.size(); ++i)
-    cv::circle(frame_, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
-}
-
-//Legacy - Spheric Marker
+/*
+ * Legacy detection, used for the spheric marker detection
+ * Returns a cv::Point2f with the x,y coordinates of the marker on the image
+ */
 cv::Point2f MarkerTracker::findMarker()
 {
   applyMask();
@@ -170,21 +154,24 @@ cv::Point2f MarkerTracker::findMarker()
   cv::Mat img_source = frame_;
   img_source.convertTo(img_source, CV_8UC1, 1.0/256);
 
-  detector->detect(img_source, keypoints_);
+  detector->detect(img_source, keypoints);
 
   cv::Point2f p(-1.0, -1.0);
 
-  if(keypoints_.size() > 0)
-    p = keypoints_[keypoints_.size()-1].pt;
+  if(keypoints.size() > 0)
+    p = keypoints[keypoints.size()-1].pt;
 
   return p;
 }
 
-//New - Cubic Marker
+/*
+ * New detection for the cubic marker
+ * Returns the cv::Keypoint containing the position x,y of the marker on the image
+ * and its size
+ */
 cv::KeyPoint MarkerTracker::detectMarker()
 {
   applyMask();
-  newFrame = false;
   cv::Mat img_source = frame_;
   img_source.convertTo(img_source, CV_8UC1, 1.0/256);
 
@@ -199,11 +186,7 @@ cv::KeyPoint MarkerTracker::detectMarker()
     cv::drawContours(blobImage, contours, i, cv::Scalar(255,255,255), CV_FILLED);
 
   //----------------BLOB DETECTOR-------->
-
-  //Detection BLOB
   detector->detect(blobImage, keypoints);
-  //cv::imshow("Blob", blobImage);
-  //cv::waitKey(30);
 
   if(keypoints.size() > 0)
     return keypoints[0];
@@ -211,18 +194,10 @@ cv::KeyPoint MarkerTracker::detectMarker()
     return cv::KeyPoint(-1.0, -1.0, -1.0); // size is -1 means no detection, check if its an allowed value
 }
 
-//private
-void MarkerTracker::findMarkerContours( const cv::Mat& image, std::vector<std::vector<cv::Point>>& contours )
-{
-  contours.clear();
-  cv::threshold(image, image, 150, 255, cv::THRESH_BINARY);
-  cv::GaussianBlur(image, image, cv::Size(3,3), 0, 0);
-  cv::findContours(image, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-
-}
-
-
-// Exploit pinhole camera model to compute X and Y, find Z in depth map
+/*
+ * Returns the 3D backprojection of the specified 2D Point
+ * Uses intrinsics camera parameters and exploit pinhole model
+ */
 cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
 {
   depthValues.resize(0);
@@ -259,6 +234,10 @@ cv::Point3f MarkerTracker::findCoord3D(cv::Point2f point)
   return cv::Point3f(X,Y,Z);
 }
 
+/*
+ * Returns the 3D backprojection of the specified 2D Keypoint
+ * Uses intrinsics camera parameters and exploit pinhole model
+ */
 cv::Point3f MarkerTracker::findCoord3D(cv::KeyPoint point)
 {
   depthValues.resize(0);
@@ -272,7 +251,120 @@ cv::Point3f MarkerTracker::findCoord3D(cv::KeyPoint point)
   return cv::Point3f(X,Y,Z);
 }
 
-//Computes the Depth of the detected marker. Filter out points lying on the marker's edges.
+/*
+ * Computes the estimated depth of the specified Keypoint area
+ * Assumes the specified keypoint is a valid detection
+ */
+void MarkerTracker::findMarkerDepth(const cv::KeyPoint markerKeypoint)
+{
+  medianDepth = -1.0;
+  radius = markerKeypoint.size;
+  centerX = markerKeypoint.pt.x;
+  centerY = markerKeypoint.pt.y;
+  findDepthValues();
+  findMedianDepth();
+  refineMedianDepth();
+}
+
+/*
+ * Returns true if an IR frame has been published and read
+ */
+bool MarkerTracker::hasIR()
+{
+  return (!frame_.empty());
+}
+
+/*
+ * Returns true if a Depth frame has been published and read
+ */
+bool MarkerTracker::hasDepth()
+{
+  return (!depth_frame_.empty());
+}
+
+/*
+ * Pass the latest IR image frame
+ */
+void MarkerTracker::getIRFrame(cv::Mat &image)
+{
+  if (frame_.empty())
+    ROS_INFO("Empty IR Frame");
+  else
+    image = frame_;
+}
+
+/*
+ * Pass the latest Depth image frame
+ */
+void MarkerTracker::getDepthFrame(cv::Mat &depth)
+{
+  if (depth_frame_.empty())
+    ROS_INFO("Empty Depth Frame!");
+  else
+    depth = depth_frame_;
+}
+
+/*
+ * Pass the latest output(RGB) frame with the detected points drawn
+ */
+void MarkerTracker::getOutputFrame(cv::Mat &out)
+{
+  if (frame_.empty())
+  {
+    ROS_INFO("Cannot render output image with keypoints");
+  }
+  else
+  {
+    cv::Mat im;
+    frame_.convertTo(im, CV_8UC1, 1.0/256);
+    cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
+
+    for(int i = 0; i < depthPoints.size(); ++i)
+      cv::circle(im, depthPoints[i], 1, cv::Scalar(0, 255, 0));
+
+    cv::drawKeypoints(im , keypoints, im, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    out = im;
+  }
+}
+
+//-----------------PRIVATE FUNCTIONS---------------->
+
+/*
+ *  Parses intrisinc camera parameters from specified path
+ */
+bool MarkerTracker::readCameraParams(std::string path) //make private
+{
+  std::cout << "Reading camera parameters from input file.. \n";
+
+  cv::FileStorage fs(path, cv::FileStorage::READ);
+  if ( !fs.isOpened() )
+  {
+    std::cout << "Cannot open " << path << std::endl;
+    return false;
+  }
+
+  fs["cameraMatrix"] >> cameraMatrix;
+  fs["distortionCoefficients"]   >> distCoeffs;
+
+  std::cout << "Camera calibration parameters OK!" << std::endl;
+  std::cout << "camera matrix: " << cameraMatrix << std::endl;
+  std::cout << "distortion coeffs: " << distCoeffs << std::endl;
+
+}
+
+/*
+ * Apply user masking to the IR frame to avoid wrong detections due to reflections
+ */
+void MarkerTracker::applyMask()
+{
+  //Mask clicked points
+  for(int i=0; i<maskPoints.size(); ++i)
+    cv::circle(frame_, maskPoints[i], 3, cv::Scalar(0,0,0), -1);
+}
+
+/*
+ * Computes the Depth of the detected marker. Filter out points lying on the marker's edges.
+ */
 void MarkerTracker::findDepthValues()
 {
   depthValues.resize(0); //resets precedent residual values
@@ -294,8 +386,9 @@ void MarkerTracker::findDepthValues()
   } // for
 }
 
-//private
-//Computes the median point
+/*
+ * Computes the median point between the median depth points of the marker
+ */
 void MarkerTracker::findMedianDepth()
 {
   std::sort(depthValues.begin(), depthValues.end());
@@ -313,9 +406,10 @@ void MarkerTracker::findMedianDepth()
   }
 }
 
-//private
-//Refines the median point by removing points too far from the median and computing again
-//This can be avoided since the medianDepth is already good enough.
+/*
+ * Refines the median point by removing points too far from the previous median
+ * This can be avoided since the medianDepth is already good enough.
+ */
 void MarkerTracker::refineMedianDepth()
 {
   if(depthValues.size() != 0 )
@@ -340,67 +434,14 @@ void MarkerTracker::refineMedianDepth()
   }
 }
 
-//Computes the depth of the marker, descripted by a cv::Keypoint
-//Assumes it is a valid keypoint of a valid detection
-void MarkerTracker::findMarkerDepth(const cv::KeyPoint markerKeypoint)
+/*
+ * Finds contours of the IR image
+ */
+void MarkerTracker::findMarkerContours( const cv::Mat& image, std::vector<std::vector<cv::Point>>& contours )
 {
-  medianDepth = -1.0;
-  radius = markerKeypoint.size;
-  centerX = markerKeypoint.pt.x;
-  centerY = markerKeypoint.pt.y;
-  findDepthValues();
-  findMedianDepth();
-  refineMedianDepth();
+  contours.clear();
+  cv::threshold(image, image, 150, 255, cv::THRESH_BINARY);
+  cv::GaussianBlur(image, image, cv::Size(3,3), 0, 0);
+  cv::findContours(image, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+
 }
-
-bool MarkerTracker::hasIR()
-{
-  return (!frame_.empty());
-}
-
-bool MarkerTracker::hasDepth()
-{
-  return (!depth_frame_.empty());
-}
-
-void MarkerTracker::getIRFrame(cv::Mat &image)
-{
-  if (frame_.empty())
-    ROS_INFO("Empty IR Frame");
-  else
-    image = frame_;
-}
-
-void MarkerTracker::getDepthFrame(cv::Mat &depth)
-{
-  if (depth_frame_.empty())
-    ROS_INFO("Empty Depth Frame!");
-  else {
-    depth = depth_frame_;
-    cv::cvtColor(depth, depth, cv::COLOR_GRAY2BGR);
-    for (int i = 0; i < keypoints_.size(); ++i)
-      cv::circle(depth, keypoints_[i].pt, 5, cv::Scalar(0,255,0), 2);
-  }
-}
-
-void MarkerTracker::getOutputFrame(cv::Mat &out)
-{
-  if (frame_.empty())
-  {
-    ROS_INFO("Cannot render output image with keypoints");
-  }
-  else
-  {
-    cv::Mat im;
-    frame_.convertTo(im, CV_8UC1, 1.0/256);
-    cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
-
-    for(int i = 0; i < depthPoints.size(); ++i)
-      cv::circle(im, depthPoints[i], 1, cv::Scalar(0, 255, 0));
-
-    cv::drawKeypoints(im , keypoints, im, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    out = im;
-  }
-}
-
-

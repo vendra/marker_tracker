@@ -61,16 +61,3 @@ target_link_libraries(master_node
 	${OpenCV_LIBRARIES}
 )
 
-add_executable(cube_detector src/cube_detector.cpp)
-target_link_libraries(cube_detector MarkerTracker
-	${PROJECT_NAME}
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-)
-
-add_executable(visp_tracker src/visp_tracker.cpp)
-target_link_libraries(visp_tracker MarkerTracker
-	${PROJECT_NAME}
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-)

@@ -36,19 +36,24 @@
 #include <opencv2/video/tracking.hpp>
 #include <math.h>
 
+// Transform to k1 master frame
 tf::StampedTransform k2transf;
 tf::StampedTransform k3transf;
 tf::StampedTransform k4transf;
+
+// Estimated Position ROS Publishers
 ros::Publisher position3D_pub;
 ros::Publisher positionKF_pub;
 
-//Global Flag for synchronization
+//Global Flags for synchronization
 bool new_pos_1 = false;
 bool new_pos_2 = false;
 bool new_pos_3 = false;
 bool new_pos_4 = false;
 
+//Points in the source camera frame
 tf::Vector3 point1, point2, point3, point4;
+//Points in the master camera frame
 tf::Vector3 transfPoint2, transfPoint3, transfPoint4;
 std::vector<tf::Vector3> pointsVecTransf, pointsVec;
 
@@ -56,218 +61,34 @@ std::vector<tf::Vector3> pointsVecTransf, pointsVec;
 cv::KalmanFilter KF(9,3,0);
 cv::Mat_<float> measurement(3,1);
 
+/*
+ * Returns the mean of the elements of the vector
+ */
+double getMean(const std::vector<double> coordinate);
 
-double getMedium(const std::vector<double> coordinate)
-{
-  double sum = 0;
-  for(int i = 0; i < coordinate.size(); ++i)
-    sum = sum + coordinate[i];
-  return sum/coordinate.size();
-}
+/*
+ * Returns the 3D position after filtering and computing the mean in each dimension
+ * Both the points in the original frame and in the master frame are needed.
+ * The first points are used to check if they are valid or not (i.e. contains -1)
+ */
+tf::Vector3 findMedium3D(std::vector<tf::Vector3> position, std::vector<tf::Vector3> positionTransf);
 
-tf::Vector3 findMedium3D(std::vector<tf::Vector3> position, std::vector<tf::Vector3> positionTransf)
-{
-  std::vector<double> xPoints;
-  std::vector<double> yPoints;
-  std::vector<double> zPoints;
-
-  //Loop and check if the original positions has -1, if it has then its not valid
-  for(int i = 0; i< positionTransf.size(); ++i)
-  {
-    if(position[i].getX() != -1 && position[i].getY() != -1 && position[i].getZ() != -1)
-    {
-      xPoints.push_back(positionTransf[i].getX());
-      yPoints.push_back(positionTransf[i].getY());
-      zPoints.push_back(positionTransf[i].getZ());
-    }
-
-  }
-  return tf::Vector3(getMedium(xPoints), getMedium(yPoints), getMedium(zPoints));
-}
-
+/*
+ * Joint callback for detected positions. Not used but needed to test/use the
+ * ROS Approximate Policy for the TimeSynchronizer
+ */
 void positionCb(const geometry_msgs::PointStampedConstPtr pos1, 
                 const geometry_msgs::PointStampedConstPtr pos2,
                 const geometry_msgs::PointStampedConstPtr pos3,
-                const geometry_msgs::PointStampedConstPtr pos4)
-{
-  //std::cout << "SEQS:: " << pos1->header.seq << " " << pos2->header.seq <<
-  //" " << pos3->header.seq << std::endl;
+                const geometry_msgs::PointStampedConstPtr pos4);
 
-  point1.setX(pos1->point.x);
-  point1.setY(pos1->point.y);
-  point1.setZ(pos1->point.z);
+/*
+ * Single callback used to receive estimated positions from each camera.
+ * Also already applies the respective transform to each point to obtain
+ * the 3D position in the master camera frame
+ */
+void singlePointCb(const geometry_msgs::PointStampedConstPtr pos);
 
-  point2.setX(pos2->point.x);
-  point2.setY(pos2->point.y);
-  point2.setZ(pos2->point.z);
-
-  point3.setX(pos3->point.x);
-  point3.setY(pos3->point.y);
-  point3.setZ(pos3->point.z);
-
-  point4.setX(pos4->point.x);
-  point4.setY(pos4->point.y);
-  point4.setZ(pos4->point.z);
-
-  //Apply transform to "kinect_01" frame as master
-  transfPoint2 = k2transf * point2;
-  transfPoint3 = k3transf * point3;
-  transfPoint4 = k4transf * point4;
-
-  pointsVecTransf.push_back(point1);
-  pointsVecTransf.push_back(transfPoint2);
-  pointsVecTransf.push_back(transfPoint3);
-  pointsVecTransf.push_back(transfPoint4);
-
-  pointsVec.push_back(point1);
-  pointsVec.push_back(point2);
-  pointsVec.push_back(point3);
-  pointsVec.push_back(point4);
-
-  //  std::cout << "1 X: " << point1.getX() << " Y: " << point1.getY() << " Z: " << point1.getZ() << std::endl;
-
-  //  std::cout << "2 X: " << point2.getX() << " new X: " << transfPoint2.getX()
-  //            << " Y: "  << point2.getX() << " new Y: " << transfPoint2.getY()
-  //            << " Z: "  << point2.getX() << " new Z: " << transfPoint2.getZ() << std::endl;
-
-  //  std::cout << "3 X: " << point3.getX() << " new X: " << transfPoint3.getX()
-  //            << " Y: "  << point3.getY() << " new Y: " << transfPoint3.getY()
-  //            << " Z: "  << point3.getZ() << " new Z: " << transfPoint3.getZ() << std::endl;
-
-  //  std::cout << "4 X: " << point4.getX() << " new X: " << transfPoint4.getX()
-  //            << " Y: "  << point4.getY() << " new Y: " << transfPoint4.getY()
-  //            << " Z: "  << point4.getZ() << " new Z: " << transfPoint4.getZ() << std::endl;
-
-  //FILTER and median
-  tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
-  std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
-               pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
-
-  geometry_msgs::PointStamped msg;
-  msg.point.x = pointOut.getX();
-  msg.point.y = pointOut.getY();
-  msg.point.z = pointOut.getZ();
-  msg.header.frame_id = "kinect_01"; // kinect_01 is master
-
-  position3D_pub.publish(msg);
-
-  //KALMAN
-
-}
-
-void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
-{
-  std::string frame = pos->header.frame_id;
-  if(frame == "kinect_01")
-  {
-    point1.setX(pos->point.x);
-    point1.setY(pos->point.y);
-    point1.setZ(pos->point.z);
-    pointsVec[0] = point1;
-    pointsVecTransf[0] = point1;
-    new_pos_1 = true;
-  }
-  if(frame == "kinect_02")
-  {
-    point2.setX(pos->point.x);
-    point2.setY(pos->point.y);
-    point2.setZ(pos->point.z);
-    transfPoint2 = k2transf * point2;
-    pointsVec[1] = point2;
-    pointsVecTransf[1] = transfPoint2;
-    new_pos_2 = true;
-  }
-  if(frame == "kinect_03")
-  {
-    point3.setX(pos->point.x);
-    point3.setY(pos->point.y);
-    point3.setZ(pos->point.z);
-    transfPoint3 = k3transf * point3;
-    pointsVec[2] = point3;
-    pointsVecTransf[2] = transfPoint3;
-    new_pos_3 = true;
-  }
-  if(frame == "kinect_04")
-  {
-    point4.setX(pos->point.x);
-    point4.setY(pos->point.y);
-    point4.setZ(pos->point.z);
-    transfPoint4 = k4transf * point4;
-    pointsVec[3] = point4;
-    pointsVecTransf[3] = transfPoint4;
-    new_pos_4 = true;
-  }
-
-
-  //Update Medium Point
-  if (new_pos_1 && new_pos_2 && new_pos_3 && new_pos_4)
-  {
-    //Reset states
-    new_pos_1 = false;
-    new_pos_2 = false;
-    new_pos_3 = false;
-    new_pos_4 = false;
-
-    tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
-    std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
-                 pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
-
-    geometry_msgs::PointStamped msg;
-    msg.point.x = pointOut.getX();
-    msg.point.y = pointOut.getY();
-    msg.point.z = pointOut.getZ();
-    msg.header.frame_id = "kinect_01"; // kinect_01 is master
-
-    position3D_pub.publish(msg);
-
-    //APPLY KALMAN
-    if(pointOut.getX() == pointOut.getX())
-    {
-      cv::Mat prediction = KF.predict();
-      std::cout << "Prediction X: " << prediction.at<float>(0) << " Y: " << prediction.at<float>(1)
-                << " Z: " << prediction.at<float>(2) << std::endl;
-
-      //  if(frame == "kinect_01")
-      //  {
-      //  measurement.at<float>(0) = pos->point.x;
-      //  measurement.at<float>(1) = pos->point.y;
-      //  measurement.at<float>(2) = pos->point.z;
-      //  }
-      //  if(frame == "kinect_02")
-      //  {
-      //  measurement.at<float>(0) = transfPoint2.getX();
-      //  measurement.at<float>(1) = transfPoint2.getY();
-      //  measurement.at<float>(2) = transfPoint2.getZ();
-      //  }
-      //  if(frame == "kinect_03")
-      //  {
-      //  measurement.at<float>(0) = transfPoint3.getX();
-      //  measurement.at<float>(1) = transfPoint3.getY();
-      //  measurement.at<float>(2) = transfPoint3.getZ();
-      //  }
-      //  if(frame == "kinect_04")
-      //  {
-      //  measurement.at<float>(0) = transfPoint4.getX();
-      //  measurement.at<float>(1) = transfPoint4.getY();
-      //  measurement.at<float>(2) = transfPoint4.getZ();
-      //  }
-      measurement.at<float>(0) = pointOut.getX();
-      measurement.at<float>(1) = pointOut.getY();
-      measurement.at<float>(2) = pointOut.getZ();
-
-      cv::Mat estimated = KF.correct(measurement);
-
-      std::cout << "Estimated X: " << estimated.at<float>(0) << " Y: " << estimated.at<float>(1)
-                << " Z: " << estimated.at<float>(2) << std::endl;
-
-      msg.point.x = estimated.at<float>(0);
-      msg.point.y = estimated.at<float>(1);
-      msg.point.z = estimated.at<float>(2);
-      positionKF_pub.publish(msg);
-    }
-  } //If new_pos_X Update-mean
-
-}
 
 int main (int argc , char* argv[])
 {
@@ -384,4 +205,207 @@ int main (int argc , char* argv[])
   ros::spin();
 
   return 0;
+}
+
+/*
+ * Returns the mean of the elements of the vector
+ */
+double getMean(const std::vector<double> coordinate)
+{
+  double sum = 0;
+  for(int i = 0; i < coordinate.size(); ++i)
+    sum = sum + coordinate[i];
+  return sum/coordinate.size();
+}
+
+/*
+ * Returns the 3D position after filtering and computing the mean in each dimension
+ * Both the points in the original frame and in the master frame are needed.
+ * The first points are used to check if they are valid or not (i.e. contains -1)
+ */
+tf::Vector3 findMedium3D(std::vector<tf::Vector3> position, std::vector<tf::Vector3> positionTransf)
+{
+  std::vector<double> xPoints;
+  std::vector<double> yPoints;
+  std::vector<double> zPoints;
+
+  //Loop and check if the original positions has -1, if it has then its not valid
+  for(int i = 0; i< positionTransf.size(); ++i)
+  {
+    if(position[i].getX() != -1 && position[i].getY() != -1 && position[i].getZ() != -1)
+    {
+      xPoints.push_back(positionTransf[i].getX());
+      yPoints.push_back(positionTransf[i].getY());
+      zPoints.push_back(positionTransf[i].getZ());
+    }
+
+  }
+  return tf::Vector3(getMean(xPoints), getMean(yPoints), getMean(zPoints));
+}
+
+/*
+ * Joint callback for detected positions. Not used but needed to test/use the
+ * ROS Approximate Policy for the TimeSynchronizer
+ */
+void positionCb(const geometry_msgs::PointStampedConstPtr pos1,
+                const geometry_msgs::PointStampedConstPtr pos2,
+                const geometry_msgs::PointStampedConstPtr pos3,
+                const geometry_msgs::PointStampedConstPtr pos4)
+{
+  //std::cout << "SEQS:: " << pos1->header.seq << " " << pos2->header.seq <<
+  //" " << pos3->header.seq << std::endl;
+
+  point1.setX(pos1->point.x);
+  point1.setY(pos1->point.y);
+  point1.setZ(pos1->point.z);
+
+  point2.setX(pos2->point.x);
+  point2.setY(pos2->point.y);
+  point2.setZ(pos2->point.z);
+
+  point3.setX(pos3->point.x);
+  point3.setY(pos3->point.y);
+  point3.setZ(pos3->point.z);
+
+  point4.setX(pos4->point.x);
+  point4.setY(pos4->point.y);
+  point4.setZ(pos4->point.z);
+
+  //Apply transform to "kinect_01" frame as master
+  transfPoint2 = k2transf * point2;
+  transfPoint3 = k3transf * point3;
+  transfPoint4 = k4transf * point4;
+
+  pointsVecTransf.push_back(point1);
+  pointsVecTransf.push_back(transfPoint2);
+  pointsVecTransf.push_back(transfPoint3);
+  pointsVecTransf.push_back(transfPoint4);
+
+  pointsVec.push_back(point1);
+  pointsVec.push_back(point2);
+  pointsVec.push_back(point3);
+  pointsVec.push_back(point4);
+
+  //  std::cout << "1 X: " << point1.getX() << " Y: " << point1.getY() << " Z: " << point1.getZ() << std::endl;
+
+  //  std::cout << "2 X: " << point2.getX() << " new X: " << transfPoint2.getX()
+  //            << " Y: "  << point2.getX() << " new Y: " << transfPoint2.getY()
+  //            << " Z: "  << point2.getX() << " new Z: " << transfPoint2.getZ() << std::endl;
+
+  //  std::cout << "3 X: " << point3.getX() << " new X: " << transfPoint3.getX()
+  //            << " Y: "  << point3.getY() << " new Y: " << transfPoint3.getY()
+  //            << " Z: "  << point3.getZ() << " new Z: " << transfPoint3.getZ() << std::endl;
+
+  //  std::cout << "4 X: " << point4.getX() << " new X: " << transfPoint4.getX()
+  //            << " Y: "  << point4.getY() << " new Y: " << transfPoint4.getY()
+  //            << " Z: "  << point4.getZ() << " new Z: " << transfPoint4.getZ() << std::endl;
+
+  //FILTER and median
+  tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
+  std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
+               pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
+
+  geometry_msgs::PointStamped msg;
+  msg.point.x = pointOut.getX();
+  msg.point.y = pointOut.getY();
+  msg.point.z = pointOut.getZ();
+  msg.header.frame_id = "kinect_01"; // kinect_01 is master
+
+  position3D_pub.publish(msg);
+
+}
+
+/*
+ * Single callback used to receive estimated positions from each camera.
+ * Also already applies the respective transform to each point to obtain
+ * the 3D position in the master camera frame
+ */
+void singlePointCb(const geometry_msgs::PointStampedConstPtr pos)
+{
+  std::string frame = pos->header.frame_id;
+  if(frame == "kinect_01")
+  {
+    point1.setX(pos->point.x);
+    point1.setY(pos->point.y);
+    point1.setZ(pos->point.z);
+    pointsVec[0] = point1;
+    pointsVecTransf[0] = point1;
+    new_pos_1 = true;
+  }
+  if(frame == "kinect_02")
+  {
+    point2.setX(pos->point.x);
+    point2.setY(pos->point.y);
+    point2.setZ(pos->point.z);
+    transfPoint2 = k2transf * point2;
+    pointsVec[1] = point2;
+    pointsVecTransf[1] = transfPoint2;
+    new_pos_2 = true;
+  }
+  if(frame == "kinect_03")
+  {
+    point3.setX(pos->point.x);
+    point3.setY(pos->point.y);
+    point3.setZ(pos->point.z);
+    transfPoint3 = k3transf * point3;
+    pointsVec[2] = point3;
+    pointsVecTransf[2] = transfPoint3;
+    new_pos_3 = true;
+  }
+  if(frame == "kinect_04")
+  {
+    point4.setX(pos->point.x);
+    point4.setY(pos->point.y);
+    point4.setZ(pos->point.z);
+    transfPoint4 = k4transf * point4;
+    pointsVec[3] = point4;
+    pointsVecTransf[3] = transfPoint4;
+    new_pos_4 = true;
+  }
+
+
+  //Update Mean Point
+  if (new_pos_1 && new_pos_2 && new_pos_3 && new_pos_4)
+  {
+    //Reset states
+    new_pos_1 = false;
+    new_pos_2 = false;
+    new_pos_3 = false;
+    new_pos_4 = false;
+
+    tf::Vector3 pointOut = findMedium3D(pointsVec, pointsVecTransf);
+    std::cout << "3D Point X:" << pointOut.getX() << " Y: " <<
+                 pointOut.getY() << " Z: " << pointOut.getZ() << std::endl;
+
+    geometry_msgs::PointStamped msg;
+    msg.point.x = pointOut.getX();
+    msg.point.y = pointOut.getY();
+    msg.point.z = pointOut.getZ();
+    msg.header.frame_id = "kinect_01"; // kinect_01 is master
+
+    position3D_pub.publish(msg);
+
+    //APPLY KALMAN
+    if(pointOut.getX() == pointOut.getX())
+    {
+      cv::Mat prediction = KF.predict();
+      std::cout << "Prediction X: " << prediction.at<float>(0) << " Y: " << prediction.at<float>(1)
+                << " Z: " << prediction.at<float>(2) << std::endl;
+
+      measurement.at<float>(0) = pointOut.getX();
+      measurement.at<float>(1) = pointOut.getY();
+      measurement.at<float>(2) = pointOut.getZ();
+
+      cv::Mat estimated = KF.correct(measurement);
+
+      std::cout << "Estimated X: " << estimated.at<float>(0) << " Y: " << estimated.at<float>(1)
+                << " Z: " << estimated.at<float>(2) << std::endl;
+
+      msg.point.x = estimated.at<float>(0);
+      msg.point.y = estimated.at<float>(1);
+      msg.point.z = estimated.at<float>(2);
+      positionKF_pub.publish(msg);
+    }
+  } //If new_pos_X Update-mean
+
 }
