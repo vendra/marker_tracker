@@ -89,7 +89,7 @@ int main (int argc , char* argv[])
   msg.point.z = 0;
 
   //Loads the correct .YAML file containing correct detector parameters and camera calibration params
-  std::string param_path = ros::package::getPath("marker_tracker")+"/parameters.yaml";
+  std::string param_path = ros::package::getPath("marker_tracker")+"/param/parameters.yaml";
   std::string calib_path = ros::package::getPath("marker_tracker")+"/param/"+id+".yaml";
   std::cout << "param path: " << param_path << std::endl;
   std::cout << "calib path: " << calib_path << std::endl;
