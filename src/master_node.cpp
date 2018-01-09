@@ -126,7 +126,7 @@ int main (int argc , char* argv[])
 
   cv::setIdentity(KF.measurementMatrix);
   cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-3));
-  cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-3));
+  cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(5e-3));
   cv::setIdentity(KF.errorCovPost, cv::Scalar::all(1));
   randn(KF.statePost, cv::Scalar::all(0), cv::Scalar::all(0.1));
 
